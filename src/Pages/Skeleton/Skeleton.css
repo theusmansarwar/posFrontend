@@ -1,0 +1,50 @@
+.card-skeleton {
+  background: #333030;
+  border-radius: 12px;
+  padding: 10px;
+  width: 300px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  animation: pulse 1.5s infinite;
+}
+
+.skeleton-icon {
+  width: 40px;
+  height: 40px;
+  background: #e0e0e0;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 10px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+.skeleton-line.short {
+  width: 40%;
+}
+
+.skeleton-line.long {
+  width: 70%;
+}
+
+@keyframes pulse {
+  0% {
+    background-color: #f0f0f0;
+  }
+  50% {
+    background-color: #e0e0e0;
+  }
+  100% {
+    background-color: #f0f0f0;
+  }
+}
