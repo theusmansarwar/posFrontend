@@ -8,7 +8,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { login } from "../DAL/auth";
-import logo from "../Assets/imslogo.png";
+import logo from "../Assets/IbrahimMotors.png";
 import "./login.css";
 import { useAlert } from "../Components/Alert/AlertContext";
 
@@ -112,7 +112,7 @@ const Login = ({ onLoginSuccess }) => {
           />
 
           <Typography variant="h5" gutterBottom>
-            Inventory Management System
+            Ibrahim Autos
           </Typography>
 
           {/* 🔹 Email Field */}

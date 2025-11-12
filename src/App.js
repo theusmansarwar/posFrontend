@@ -18,7 +18,7 @@ import Dashboard from "./Pages/Dashboard/Dashboard";
 import Users from "./Pages/Users/Users";
 import StockM from "./Pages/Stock M/StockM";
 import Roles from "./Pages/Roles/Roles";
-import logo from "./Assets/imslogo.png";
+import logo from "./Assets/IbrahimMotors.png";
 import POSBillingSystem from "./Components/POS/Pos"
 import ReturnManagement from "./Components/POS/Return"
 import { Tooltip } from "@mui/material";
