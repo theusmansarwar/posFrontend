@@ -9,16 +9,9 @@ import { IoLogOut } from "react-icons/io5";
 import {
   FaTachometerAlt,
   FaUsers,
-  FaBoxes,
   FaWarehouse,
-  FaCogs,
-  FaMapMarkerAlt,
-  FaTools,
   FaUserShield,
-  FaBuilding,
-  FaRecycle,
 } from "react-icons/fa";
-import { GiCardboardBox } from "react-icons/gi";
 import "./App.css";
 
 import Dashboard from "./Pages/Dashboard/Dashboard";

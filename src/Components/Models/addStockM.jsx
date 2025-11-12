@@ -5,14 +5,9 @@ import {
   Typography,
   Modal,
   TextField,
-  InputLabel,
-  MenuItem,
-  FormControl,
-  Select,
 } from "@mui/material";
 import { createStockM } from "../../DAL/create";
 import { updateStock } from "../../DAL/edit";
-
 
 const style = {
   position: "absolute",
@@ -33,72 +28,49 @@ export default function AddStock({
   Modeldata,
   onResponse,
 }) {
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState("");
-  const [suppliers, setSuppliers] = useState([]);
-  const [selectedSupplier, setSelectedSupplier] = useState("");
-
+  const [productName, setProductName] = useState(Modeldata?.productName || "");
+  const [supplier, setSupplier] = useState(Modeldata?.supplier || "");
+  const [rackNo, setRackNo] = useState(Modeldata?.rackNo || "");
   const [quantity, setQuantity] = useState(Modeldata?.quantity || "");
   const [unitPrice, setUnitPrice] = useState(Modeldata?.unitPrice || "");
   const [totalPrice, setTotalPrice] = useState(Modeldata?.totalPrice || "");
-  const [currentDate, setCurrentDate] = useState(Modeldata?.currentDate || "");
-  const [warrantyDate, setWarrantyDate] = useState(Modeldata?.warrantyDate || "");
+  const [purchaseDate, setPurchaseDate] = useState(Modeldata?.createdAt || "");
+  const [warranty, setWarranty] = useState(Modeldata?.warranty || "");
   const [id, setId] = useState(Modeldata?._id || "");
   const [errors, setErrors] = useState({});
 
-  // ✅ Fetch dropdown data
-  // useEffect(() => {
-  //   const getDropdownData = async () => {
-  //     try {
-  //       const productRes = await fetchallProductlist(1, 1000, "");
-  //       const supplierRes = await fetchallSupplierlist(1, 1000, "");
-  //       setProducts(productRes?.products || productRes?.data || []);
-  //       setSuppliers(supplierRes?.suppliers || supplierRes?.data || []);
-  //     } catch (error) {
-  //       console.error("Error fetching dropdown data:", error);
-  //     }
-  //   };
-  //   getDropdownData();
-  // }, []);
-
-  // ✅ Auto-calc total price
+  // Auto-calc total price
   useEffect(() => {
     if (quantity && unitPrice) {
       setTotalPrice(quantity * unitPrice);
     }
   }, [quantity, unitPrice]);
 
-  // ✅ Populate data when editing
+  // Populate data when editing
   useEffect(() => {
     if (Modeldata) {
-      setSelectedProduct(
-        Modeldata?.productName?.productName || Modeldata?.productName || ""
-      );
-      setSelectedSupplier(
-        Modeldata?.supplierName?.name || Modeldata?.supplierName || ""
-      );
+      setProductName(Modeldata?.productName || "");
+      setSupplier(Modeldata?.supplier || "");
+      setRackNo(Modeldata?.rackNo || "");
       setQuantity(Modeldata?.quantity || "");
       setUnitPrice(Modeldata?.unitPrice || "");
       setTotalPrice(Modeldata?.totalPrice || "");
-      setCurrentDate(
-        Modeldata?.currentDate ? Modeldata.currentDate.split("T")[0] : ""
+      setPurchaseDate(
+        Modeldata?.createdAt ? Modeldata.createdAt.split("T")[0] : ""
       );
-      setWarrantyDate(
-        Modeldata?.warrantyDate ? Modeldata.warrantyDate.split("T")[0] : ""
-      );
+      setWarranty(Modeldata?.warranty || "");
       setId(Modeldata?._id || "");
     }
   }, [Modeldata]);
 
   const handleClose = () => setOpen(false);
 
-  // ✅ Submit form with validation
+  // Submit form with validation
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     const newErrors = {};
 
-    // ✅ Validation for positive numbers
     if (!quantity || quantity <= 0)
       newErrors.quantity = "Quantity must be greater than 0";
     if (!unitPrice || unitPrice <= 0)
@@ -108,17 +80,17 @@ export default function AddStock({
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      return; // ❌ Stop form submission
+      return;
     }
 
     const stockData = {
-      productName: selectedProduct,
-      supplierName: selectedSupplier,
+      productName,
+      supplier,
       quantity,
       unitPrice,
       totalPrice,
-      currentDate,
-      warrantyDate,
+      purchaseDate,
+      warranty,
     };
 
     try {
@@ -132,19 +104,19 @@ export default function AddStock({
       if (response?.status === 201 || response?.status === 200) {
         onResponse({ messageType: "success", message: response.message });
 
-        // ✅ CLEAR FIELDS AFTER SUCCESSFUL ADD
         if (Modeltype === "Add") {
-          setSelectedProduct("");
-          setSelectedSupplier("");
+          setProductName("");
+          setSupplier("");
+          setRackNo("");
           setQuantity("");
           setUnitPrice("");
           setTotalPrice("");
-          setCurrentDate("");
-          setWarrantyDate("");
+          setPurchaseDate("");
+          setWarranty("");
         }
 
         setErrors({});
-        setOpen(false); // close modal
+        setOpen(false);
       } else if (response?.status === 400 && response?.missingFields) {
         const fieldErrors = {};
         response.missingFields.forEach((f) => {
@@ -172,39 +144,35 @@ export default function AddStock({
 
         {/* Product + Supplier */}
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-          <FormControl fullWidth error={!!errors.productName}>
-            <InputLabel>Select Product</InputLabel>
-            <Select
-              value={selectedProduct}
-              onChange={(e) => setSelectedProduct(e.target.value)}
-              label="Select Product"
-            >
-              {products.map((prod) => (
-                <MenuItem key={prod._id} value={prod.productName}>
-                  {prod.productName}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TextField
+            fullWidth
+            label="Product Name"
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            error={!!errors.productName}
+            helperText={errors.productName}
+          />
 
-          <FormControl fullWidth error={!!errors.supplierName}>
-            <InputLabel>Select Supplier</InputLabel>
-            <Select
-              value={selectedSupplier}
-              onChange={(e) => setSelectedSupplier(e.target.value)}
-              label="Select Supplier"
-            >
-              {suppliers.map((sup) => (
-                <MenuItem key={sup._id} value={sup.name}>
-                  {sup.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <TextField
+            fullWidth
+            label="Supplier"
+            value={supplier}
+            onChange={(e) => setSupplier(e.target.value)}
+            error={!!errors.supplier}
+            helperText={errors.supplier}
+          />
         </Box>
 
         {/* Quantity + Price */}
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+          <TextField
+            fullWidth
+            label="Rack No."
+            value={rackNo}
+            InputProps={{ readOnly: true }}
+            error={!!errors.rackNo}
+            helperText={errors.rackNo}
+          />
           <TextField
             fullWidth
             type="number"
@@ -215,6 +183,11 @@ export default function AddStock({
             error={!!errors.quantity}
             helperText={errors.quantity}
           />
+
+        </Box>
+
+        {/* Total Price */}
+        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
           <TextField
             fullWidth
             type="number"
@@ -225,10 +198,6 @@ export default function AddStock({
             error={!!errors.unitPrice}
             helperText={errors.unitPrice}
           />
-        </Box>
-
-        {/* Total Price */}
-        <Box sx={{ mt: 2 }}>
           <TextField
             fullWidth
             label="Total Price"
@@ -237,6 +206,7 @@ export default function AddStock({
             error={!!errors.totalPrice}
             helperText={errors.totalPrice}
           />
+
         </Box>
 
         {/* Dates */}
@@ -244,22 +214,20 @@ export default function AddStock({
           <TextField
             fullWidth
             type="date"
-            label="Current Date"
+            label="Purchase Date"
             InputLabelProps={{ shrink: true }}
-            value={currentDate}
-            onChange={(e) => setCurrentDate(e.target.value)}
-            error={!!errors.currentDate}
-            helperText={errors.currentDate}
+            value={purchaseDate}
+            onChange={(e) => setPurchaseDate(e.target.value)}
+            error={!!errors.purchaseDate}
+            helperText={errors.purchaseDate}
           />
           <TextField
             fullWidth
-            type="date"
-            label="Warranty Date"
-            InputLabelProps={{ shrink: true }}
-            value={warrantyDate}
-            onChange={(e) => setWarrantyDate(e.target.value)}
-            error={!!errors.warrantyDate}
-            helperText={errors.warrantyDate}
+            label="Warranty"
+            value={warranty}
+            onChange={(e) => setWarranty(e.target.value)}
+            error={!!errors.warranty}
+            helperText={errors.warranty}
           />
         </Box>
 
