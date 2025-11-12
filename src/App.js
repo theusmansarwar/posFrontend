@@ -19,6 +19,8 @@ import Users from "./Pages/Users/Users";
 import StockM from "./Pages/Stock M/StockM";
 import Roles from "./Pages/Roles/Roles";
 import logo from "./Assets/imslogo.png";
+import POSBillingSystem from "./Components/POS/Pos"
+import ReturnManagement from "./Components/POS/Return"
 import { Tooltip } from "@mui/material";
 
 const App = ({ onLogout }) => {
@@ -112,9 +114,8 @@ const App = ({ onLogout }) => {
           <Route path="/rolesData" element={<Roles />} />
           <Route path="/usersData" element={<Users />} />
           <Route path="/stockData" element={<StockM />} />
-          {/* <Route path="/billData" element={<Billing />} /> */}
-
-
+          <Route path="/billData" element={<POSBillingSystem />} />
+          <Route path="/ReturnData" element={<ReturnManagement />} />
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
