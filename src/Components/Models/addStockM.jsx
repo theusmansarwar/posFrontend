@@ -33,6 +33,7 @@ export default function AddStock({
   const [rackNo, setRackNo] = useState(Modeldata?.rackNo || "");
   const [quantity, setQuantity] = useState(Modeldata?.quantity || "");
   const [unitPrice, setUnitPrice] = useState(Modeldata?.unitPrice || "");
+  const [salePrice, setSalePrice] = useState(Modeldata?.salePrice || "");
   const [totalPrice, setTotalPrice] = useState(Modeldata?.totalPrice || "");
   const [purchaseDate, setPurchaseDate] = useState(Modeldata?.createdAt || "");
   const [warranty, setWarranty] = useState(Modeldata?.warranty || "");
@@ -54,6 +55,7 @@ export default function AddStock({
       setRackNo(Modeldata?.rackNo || "");
       setQuantity(Modeldata?.quantity || "");
       setUnitPrice(Modeldata?.unitPrice || "");
+      setSalePrice(Modeldata?.salePrice || "");
       setTotalPrice(Modeldata?.totalPrice || "");
       setPurchaseDate(
         Modeldata?.createdAt ? Modeldata.createdAt.split("T")[0] : ""
@@ -63,20 +65,31 @@ export default function AddStock({
     }
   }, [Modeldata]);
 
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false);
+    setErrors({});
+  };
 
   // Submit form with validation
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Clear previous errors
+    setErrors({});
+
     const newErrors = {};
 
+    // Validate required fields
+    if (!productName?.trim()) 
+      newErrors.productName = "Product name is required";
     if (!quantity || quantity <= 0)
       newErrors.quantity = "Quantity must be greater than 0";
     if (!unitPrice || unitPrice <= 0)
-      newErrors.unitPrice = "Unit Price must be greater than 0";
+      newErrors.unitPrice = "Unit price must be greater than 0";
+    if (!salePrice || salePrice <= 0)
+      newErrors.salePrice = "Sale price must be greater than 0";
     if (!totalPrice || totalPrice <= 0)
-      newErrors.totalPrice = "Total Price must be greater than 0";
+      newErrors.totalPrice = "Total price must be greater than 0";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -86,9 +99,11 @@ export default function AddStock({
     const stockData = {
       productName,
       supplier,
-      quantity,
-      unitPrice,
-      totalPrice,
+      rackNo,
+      quantity: Number(quantity),
+      unitPrice: Number(unitPrice),
+      salePrice: Number(salePrice),
+      totalPrice: Number(totalPrice),
       purchaseDate,
       warranty,
     };
@@ -102,14 +117,23 @@ export default function AddStock({
       }
 
       if (response?.status === 201 || response?.status === 200) {
-        onResponse({ messageType: "success", message: response.message });
+        const successMessage = Modeltype === "Add" 
+          ? "Stock added successfully" 
+          : "Stock updated successfully";
+        
+        onResponse({ 
+          messageType: "success", 
+          message: response.message || successMessage 
+        });
 
+        // Reset form only on Add
         if (Modeltype === "Add") {
           setProductName("");
           setSupplier("");
           setRackNo("");
           setQuantity("");
           setUnitPrice("");
+          setSalePrice("");
           setTotalPrice("");
           setPurchaseDate("");
           setWarranty("");
@@ -124,13 +148,16 @@ export default function AddStock({
         });
         setErrors(fieldErrors);
       } else {
-        onResponse({ messageType: "error", message: response?.message });
+        onResponse({ 
+          messageType: "error", 
+          message: response?.message || "Operation failed" 
+        });
       }
     } catch (err) {
-      console.error("❌ Error:", err);
+      console.error("Error:", err);
       onResponse({
         messageType: "error",
-        message: err.response?.data?.message || "Server error",
+        message: err.response?.data?.message || "Server error occurred",
       });
     }
   };
@@ -163,13 +190,13 @@ export default function AddStock({
           />
         </Box>
 
-        {/* Quantity + Price */}
+        {/* Rack No + Quantity */}
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
           <TextField
             fullWidth
             label="Rack No."
             value={rackNo}
-            InputProps={{ readOnly: true }}
+            onChange={(e) => setRackNo(e.target.value)}
             error={!!errors.rackNo}
             helperText={errors.rackNo}
           />
@@ -183,33 +210,9 @@ export default function AddStock({
             error={!!errors.quantity}
             helperText={errors.quantity}
           />
-
         </Box>
 
-        {/* Total Price */}
-        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
-          <TextField
-            fullWidth
-            type="number"
-            label="Unit Price"
-            value={unitPrice}
-            onChange={(e) => setUnitPrice(e.target.value)}
-            inputProps={{ min: 1 }}
-            error={!!errors.unitPrice}
-            helperText={errors.unitPrice}
-          />
-          <TextField
-            fullWidth
-            label="Total Price"
-            value={totalPrice}
-            InputProps={{ readOnly: true }}
-            error={!!errors.totalPrice}
-            helperText={errors.totalPrice}
-          />
-
-        </Box>
-
-        {/* Dates */}
+        {/* Purchase Date + Warranty */}
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
           <TextField
             fullWidth
@@ -228,6 +231,38 @@ export default function AddStock({
             onChange={(e) => setWarranty(e.target.value)}
             error={!!errors.warranty}
             helperText={errors.warranty}
+          />
+        </Box>
+
+        {/* Prices */}
+        <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+          <TextField
+            fullWidth
+            type="number"
+            label="Unit Price"
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            inputProps={{ min: 1 }}
+            error={!!errors.unitPrice}
+            helperText={errors.unitPrice}
+          />
+          <TextField
+            fullWidth
+            type="number"
+            label="Sale Price"
+            value={salePrice}
+            onChange={(e) => setSalePrice(e.target.value)}
+            inputProps={{ min: 1 }}
+            error={!!errors.salePrice}
+            helperText={errors.salePrice}
+          />
+          <TextField
+            fullWidth
+            label="Total Price"
+            value={totalPrice}
+            InputProps={{ readOnly: true }}
+            error={!!errors.totalPrice}
+            helperText={errors.totalPrice}
           />
         </Box>
 

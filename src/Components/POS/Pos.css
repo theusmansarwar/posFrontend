@@ -128,10 +128,36 @@
 
 /* Products Table */
 .products-table-container {
-  max-height: 600px;
-  overflow-y: auto;
+  max-height: 250px;
+  overflow-y: scroll;
   border: 1px solid #e5e7eb;
   border-radius: 3px;
+}
+
+/* Custom Scrollbar Styling */
+.products-table-container::-webkit-scrollbar {
+  width: 12px;
+}
+
+.products-table-container::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+
+.products-table-container::-webkit-scrollbar-thumb {
+  background: #1e3a8a;
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+}
+
+.products-table-container::-webkit-scrollbar-thumb:hover {
+  background: #1e40af;
+}
+
+/* For Firefox */
+.products-table-container {
+  scrollbar-width: auto;
+  scrollbar-color: #1e3a8a #e5e7eb;
 }
 
 .products-table {
