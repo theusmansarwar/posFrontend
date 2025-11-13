@@ -53,7 +53,18 @@ export const createStockM = async (data) => {
   };
   return invokeApi(reqObj);
 };
+export const createNewStock = async (id,data) => {
 
+  const reqObj = {
+    path: `/stock/addnew/${id}`,
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: data,
+  };
+  return invokeApi(reqObj);
+};
 export const createExpense = async (data) => {
 
   const reqObj = {

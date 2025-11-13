@@ -13,7 +13,7 @@ const StockM = () => {
     { id: "salePrice", label: "Sale Price" },
     { id: "totalPrice", label: "Total Price" },
     { id: "supplier", label: "Supplier" },
-    { id: "createdAt", label: "Purchase Date" },
+    { id: "purchaseDate", label: "Purchase Date" },
     { id: "warranty", label: "Warranty" },
   ];
 

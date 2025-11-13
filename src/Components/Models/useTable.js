@@ -20,17 +20,18 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { fetchallroleslist, fetchallStocklist, fetchalluserlist,fetchallExpenselist } from "../../DAL/fetch";
+import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist } from "../../DAL/fetch";
 import { formatDate } from "../../Utils/Formatedate";
 import truncateText from "../../truncateText";
 import { useNavigate } from "react-router-dom";
-import { deleteAllRoles, deleteAllStock, deleteAllUsers,deleteAllExpense } from "../../DAL/delete";
+import { deleteAllRoles, deleteAllStock, deleteAllUsers, deleteAllExpense } from "../../DAL/delete";
 import { useAlert } from "../Alert/AlertContext";
 import DeleteModal from "./confirmDeleteModel";
 import AddUsers from "./addUsers";
 import AddRoles from "./AddRoles";
 import AddStock from "./addStockM";
 import AddExpense from "./AddExpense";
+import AddNewStock from "./AddNewStock";
 
 
 
@@ -51,6 +52,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [openRolesModal, setOpenRolesModal] = useState(false);
   const [openUserModal, setOpenUserModal] = useState(false);
   const [openStockModal, setOpenStockModal] = useState(false);
+  const [openNewStockModal, setOpenNewStockModal] = useState(false);
   const [openExpenseModal, setOpenExpenseModal] = useState(false);
   const [modeltype, setModeltype] = useState("Add");
   const [modelData, setModelData] = useState({});
@@ -181,6 +183,13 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
     }
 
   };
+  const handleAddNew = (category) => {
+    if (tableType === "Stock") {
+      setOpenNewStockModal(true);
+      setModelData(category);
+    }
+  }
+
 
   const handleDelete = async () => {
     if (selected.length === 0) {
@@ -291,14 +300,21 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
             onResponse={handleResponse}
           />
         )}
-
-         {openExpenseModal && (
+        {openNewStockModal && (
+          <AddNewStock
+            open={openNewStockModal}
+            setOpen={setOpenNewStockModal}
+            Modeldata={modelData}
+            onResponse={handleResponse}
+          />
+        )}
+        {openExpenseModal && (
           <AddExpense
             open={openExpenseModal}
             setOpen={setOpenExpenseModal}
             Modeltype={modeltype}
             Modeldata={modelData}
-            onResponse={handleResponse} 
+            onResponse={handleResponse}
           />
         )}
 
@@ -385,16 +401,28 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                         textTransform: "uppercase",
                         letterSpacing: "0.5px",
                       },
-                      minWidth: "1200px", // ensures scroll if columns exceed width
+                      minWidth: "1200px",
+
                       "& th:first-of-type, & td:first-of-type": {
-                        minWidth: "60px", //  first column (checkbox)
+                        minWidth: "60px", // checkbox column
                       },
+
+                      // Default width for most columns
                       "& th, & td": {
-                        minWidth: "150px", //  all other columns
+                        minWidth: "80px",
                         whiteSpace: "nowrap",
+                      },
+
+                      //  Custom widths for columns 3, 8, 9, and 12
+                      "& th:nth-of-type(3), & td:nth-of-type(3), \
+                      & th:nth-of-type(8), & td:nth-of-type(8), \
+                      & th:nth-of-type(9), & td:nth-of-type(9), \
+                      & th:nth-of-type(12), & td:nth-of-type(12)": {
+                        minWidth: "160px",
                       },
                     }}
                   >
+
                     <TableCell padding="checkbox">
                       <Checkbox
                         sx={{
@@ -595,7 +623,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                               <Button
                                 size="small"
                                 variant="contained"
-                                onClick={() => handleviewClick(row)}
+                                onClick={() => handleAddNew(row)}
                                 sx={{
                                   textTransform: "none",
                                   background: "var(--primary-color)",
@@ -609,7 +637,6 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                               </Button>
                             </TableCell>
                           )}
-
                         </TableRow>
                       );
                     })
