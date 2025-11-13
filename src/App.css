@@ -85,8 +85,6 @@ p, h1, h2, h3, h4, h5, h6{
 
 }
 
-
-
 .home-zemalt-logo {
   width: 60%;
   margin-top: 15px;
@@ -176,7 +174,7 @@ font-size: 12px;
 }
 
 .logo {
-  width: 60%;
+  width: 45%;
   margin-top: 20px;
   transition: opacity 0.3s ease, width 0.3s ease;
 }
