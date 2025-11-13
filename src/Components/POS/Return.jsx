@@ -272,12 +272,12 @@ const ReturnManagement = () => {
           .receipt-header {
             text-align: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #dc2626;
+            border-bottom: 2px solid #334eac;;
             padding-bottom: 15px;
           }
           .receipt-header h2 {
             margin: 0 0 10px 0;
-            color: #dc2626;
+            color: #334eac;
             font-size: 22px;
           }
           .receipt-header p {
@@ -285,7 +285,7 @@ const ReturnManagement = () => {
             font-size: 12px;
           }
           .return-badge {
-            background: #dc2626;
+            background: #334eac;;
             color: white;
             padding: 8px 16px;
             border-radius: 3px;
@@ -326,10 +326,10 @@ const ReturnManagement = () => {
           }
           th {
             background: #f3f4f6;
-            border-bottom: 2px solid #dc2626;
+            border-bottom: 2px solid #334eac;;
           }
           .receipt-summary {
-            border-top: 2px solid #dc2626;
+            border-top: 2px solid #334eac;;
             padding-top: 15px;
           }
           .summary-line {
@@ -341,20 +341,20 @@ const ReturnManagement = () => {
           .summary-line.total {
             font-size: 17px;
             font-weight: 700;
-            color: #dc2626;
+            color: #334eac;;
             margin-top: 10px;
             padding-top: 10px;
             border-top: 2px solid #e5e7eb;
           }
           .return-reason-box {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
+            background: #f2f6feff;
+            border: 1px solid #cad7feff;
             padding: 12px;
             border-radius: 3px;
             margin: 15px 0;
           }
           .return-reason-box strong {
-            color: #dc2626;
+            color: #334eac;;
             display: block;
             margin-bottom: 5px;
           }
@@ -362,7 +362,7 @@ const ReturnManagement = () => {
             text-align: center;
             margin-top: 20px;
             padding-top: 15px;
-            border-top: 2px solid #dc2626;
+            border-top: 2px solid #334eac;
           }
           .receipt-footer p {
             margin: 4px 0;
@@ -379,7 +379,7 @@ const ReturnManagement = () => {
             color: #9ca3af;
           }
           .watermark strong {
-            color: #dc2626;
+            color: #334eac;
             font-size: 12px;
           }
           .company-logo {
