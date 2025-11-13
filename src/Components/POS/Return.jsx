@@ -171,7 +171,7 @@ const ReturnManagement = () => {
     return returnItems.reduce((sum, item) => sum + (item.salePrice * item.returnQuantity), 0);
   };
 
-  // FIXED: Generate return receipt with API call
+   
   const handleGenerateReturnReceipt = async () => {
     const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
     
@@ -193,43 +193,36 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
 
-      // Prepare return data for API
+      // ✅ Match your backend’s expected structure
       const returnData = {
-        billId: selectedBill.billNo,
+        billId: selectedBill.billNo, // BILL-000020
+        isDeleted: false,            // ensure reactivation if needed
         items: itemsToReturn.map(item => ({
-          productId: typeof item.productId === 'object' ? item.productId._id : item.productId,
+          productId: item.productId?._id || item.productId, // handle object or ID
           productName: item.productName,
           quantity: item.returnQuantity,
-          price: item.salePrice
+          salePrice: item.salePrice,
+          total: item.salePrice * item.returnQuantity
         })),
-        returnTotal: calculateReturnTotal(),
-        refundMode: refundMode,
-        returnReason: returnReason,
-        staffId: staffId,
-        shift: shift
+        returnReason,
+        refundMode,
+        staffId,
+        shift
       };
 
-      // API call to process return - try different possible endpoints
-      let response;
-      const endpoints = [
-        `https://pos.ztesting.site/backend/bill/${selectedBill._id}/return`,
-        `https://pos.ztesting.site/backend/return`,
-        `https://pos.ztesting.site/backend/bill/return/${selectedBill._id}`
-      ];
-      
-      // Try first endpoint
-      response = await fetch(endpoints[0], {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(returnData)
-      });
+      // ✅ Use your actual bill update endpoint
+      const response = await fetch(
+        `https://pos.ztesting.site/backend/bill/${selectedBill.billNo}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(returnData)
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
-        
-        // Create return receipt data
+
         const returnReceipt = {
           returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
@@ -237,18 +230,18 @@ const ReturnManagement = () => {
           returnDate: new Date().toLocaleString(),
           items: itemsToReturn,
           returnTotal: calculateReturnTotal(),
-          refundMode: refundMode,
-          returnReason: returnReason,
-          staffId: staffId,
-          shift: shift
+          refundMode,
+          returnReason,
+          staffId,
+          shift
         };
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
         
-        alert('Return processed successfully!');
       } else {
         const errorData = await response.json();
+        console.error('Return error:', errorData);
         alert(`Failed to process return: ${errorData.message || 'Unknown error'}`);
       }
     } catch (error) {
@@ -258,6 +251,7 @@ const ReturnManagement = () => {
       setLoading(false);
     }
   };
+
 
   const handlePrint = () => {
     const printWindow = window.open('', '', 'width=800,height=600');
