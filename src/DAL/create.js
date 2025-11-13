@@ -57,7 +57,7 @@ export const createStockM = async (data) => {
 export const createExpense = async (data) => {
 
   const reqObj = {
-    path: "/expence/add",
+    path: "/expense/add",
     method: "POST",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("Token")}`,

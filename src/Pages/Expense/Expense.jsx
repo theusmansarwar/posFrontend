@@ -4,7 +4,7 @@ import { useTable } from "../../Components/Models/useTable";
 const ExpenseM = () => {
    
   const attributes = [
-    { id: "expenseId", label: "Expense Id" },
+    { id: "ExpenseId", label: "Expense Id" },
     { id: "name", label: "Expense Name" },
     { id: "comment", label: "Comment" },
     { id: "amount", label: "Amount" },

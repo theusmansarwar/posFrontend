@@ -35,7 +35,7 @@ export const updateStock = async (id,data) => {
 export const updateExpense = async (id,data) => {
  
   const reqObj = {
-    path: `/expence/update/${id}`,
+    path: `/expense/update/${id}`,
     method: "PUT",
     headers: {      Authorization: `Bearer ${localStorage.getItem("Token")}`,},
     postData: data,
