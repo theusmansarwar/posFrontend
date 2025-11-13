@@ -31,7 +31,7 @@ const POSBillingSystem = () => {
 
   useEffect(() => {
     // Get logged-in user from localStorage and auto-fill staff ID
-    const loggedInUser = localStorage.getItem("user");
+    const loggedInUser = localStorage.getItem("userData");
     if (loggedInUser) {
       try {
         const userData = JSON.parse(loggedInUser);
@@ -474,7 +474,7 @@ const POSBillingSystem = () => {
           </table>
         </div>
         <div className="cashier-section">
-          <div className="cashier-input-group">
+          {/* <div className="cashier-input-group">
             <label>Staff ID:</label>
             <input
               type="text"
@@ -483,7 +483,7 @@ const POSBillingSystem = () => {
               onChange={(e) => setStaffId(e.target.value)}
               className="cashier-input"
             />
-          </div>
+          </div> */}
           <div className="cashier-input-group">
             <label>Shift:</label>
             <select
