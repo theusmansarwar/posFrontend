@@ -197,7 +197,7 @@ const ReturnManagement = () => {
       const returnData = {
         billId: selectedBill.billNo,
         items: itemsToReturn.map(item => ({
-          productId: item.productId,
+          productId: typeof item.productId === 'object' ? item.productId._id : item.productId,
           productName: item.productName,
           quantity: item.returnQuantity,
           price: item.salePrice
@@ -209,9 +209,17 @@ const ReturnManagement = () => {
         shift: shift
       };
 
-      // API call to process return (PUT method)
-      const response = await fetch(`https://pos.ztesting.site/backend/bill/return/${selectedBill._id}`, {
-        method: 'PUT',
+      // API call to process return - try different possible endpoints
+      let response;
+      const endpoints = [
+        `https://pos.ztesting.site/backend/bill/${selectedBill._id}/return`,
+        `https://pos.ztesting.site/backend/return`,
+        `https://pos.ztesting.site/backend/bill/return/${selectedBill._id}`
+      ];
+      
+      // Try first endpoint
+      response = await fetch(endpoints[0], {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -452,7 +460,7 @@ const ReturnManagement = () => {
             <div className="bill-details-box">
               <p><strong>Bill No:</strong> {selectedBill.billNo}</p>
               <p><strong>Date:</strong> {selectedBill.date}</p>
-              <p><strong>Original Total:</strong> ${selectedBill.total?.toFixed(2) || '0.00'}</p>
+              <p><strong>Original Total:</strong> Rs.{selectedBill.total?.toFixed(2) || '0.00'}</p>
             </div>
           </div>
         )}
@@ -525,8 +533,8 @@ const ReturnManagement = () => {
                         </button>
                       </div>
                     </td>
-                    <td>${item.salePrice?.toFixed(2) || '0.00'}</td>
-                    <td>${((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
+                    <td>Rs.{item.salePrice?.toFixed(2) || '0.00'}</td>
+                    <td>Rs.{((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
                     <td>
                       <button 
                         onClick={() => handleDeleteItem(item._id)} 
@@ -575,7 +583,7 @@ const ReturnManagement = () => {
                       <td className="bill-number-cell">{bill.billNo}</td>
                       <td className="bill-date-cell">{bill.date}</td>
                       <td className="bill-items-cell">{bill.items?.length || 0}</td>
-                      <td className="bill-total-cell">${bill.total?.toFixed(2) || '0.00'}</td>
+                      <td className="bill-total-cell">Rs.{bill.total?.toFixed(2) || '0.00'}</td>
                       <td>
                         <span className="payment-badge">{bill.paymentMode?.toUpperCase() || 'N/A'}</span>
                       </td>
@@ -616,7 +624,7 @@ const ReturnManagement = () => {
 
           <div className="summary-row total-row">
             <span>Refund Amount:</span>
-            <span>${calculateReturnTotal().toFixed(2)}</span>
+            <span>Rs.{calculateReturnTotal().toFixed(2)}</span>
           </div>
 
           <div className="return-reason-section">
@@ -698,8 +706,8 @@ const ReturnManagement = () => {
                     <tr key={item._id}>
                       <td>{item.productName}</td>
                       <td>{item.returnQuantity}</td>
-                      <td>${item.salePrice?.toFixed(2) || '0.00'}</td>
-                      <td>${((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
+                      <td>Rs.{item.salePrice?.toFixed(2) || '0.00'}</td>
+                      <td>Rs.{((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -708,7 +716,7 @@ const ReturnManagement = () => {
               <div className="receipt-summary">
                 <div className="summary-line total">
                   <span>Total Refund:</span>
-                  <span>${returnReceiptData.returnTotal.toFixed(2)}</span>
+                  <span>Rs.{returnReceiptData.returnTotal.toFixed(2)}</span>
                 </div>
               </div>
 

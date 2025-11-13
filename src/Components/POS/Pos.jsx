@@ -1,33 +1,62 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { Trash2, Plus, Minus, Printer, Download, Search, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import {
+  Trash2,
+  Plus,
+  Minus,
+  Printer,
+  Download,
+  Search,
+  X,
+} from "lucide-react";
 import { FaPhoneAlt } from "react-icons/fa";
-import logoo from '../../Assets/logoo.jpg'
-import './Pos.css';
+import logoo from "../../Assets/logoo.jpg";
+import "./Pos.css";
 
 const POSBillingSystem = () => {
-  const [searchId, setSearchId] = useState('');
+  const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState(null);
   const [cartItems, setCartItems] = useState([]);
-  const [discountType, setDiscountType] = useState('amount');
+  const [discountType, setDiscountType] = useState("amount");
   const [discountValue, setDiscountValue] = useState(0);
   const [laborCost, setLaborCost] = useState(0);
-  const [customerPay, setCustomerPay] = useState('');
-  const [staffId, setStaffId] = useState('');
-  const [shift, setShift] = useState('morning');
-  const [paymentMode, setPaymentMode] = useState('cash');
+  const [customerPay, setCustomerPay] = useState("");
+  const [staffId, setStaffId] = useState("");
+  const [shift, setShift] = useState("morning");
+  const [paymentMode, setPaymentMode] = useState("cash");
   const [showBillPopup, setShowBillPopup] = useState(false);
   const [billData, setBillData] = useState(null);
   const [products, setProducts] = useState([]);
   const billRef = useRef();
 
   useEffect(() => {
+    // Get logged-in user from localStorage and auto-fill staff ID
+    const loggedInUser = localStorage.getItem("user");
+    if (loggedInUser) {
+      try {
+        const userData = JSON.parse(loggedInUser);
+        // Set staff ID from user data (adjust the property name based on your user object structure)
+        if (userData._id) {
+          setStaffId(userData._id);
+        } else if (userData.id) {
+          setStaffId(userData.id);
+        } else if (userData.username) {
+          setStaffId(userData.username);
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+
+    // Fetch initial products
     const fetchInitialProducts = async () => {
       try {
-        const res = await axios.get('https://pos.ztesting.site/backend/stock/list?page=1&limit=50');
+        const res = await axios.get(
+          "https://pos.ztesting.site/backend/stock/list?page=1&limit=50"
+        );
         setProducts(res.data?.data || res.data);
       } catch (err) {
-        console.error('Error fetching products:', err);
+        console.error("Error fetching products:", err);
       }
     };
     fetchInitialProducts();
@@ -35,55 +64,60 @@ const POSBillingSystem = () => {
 
   const handleSearch = async () => {
     try {
-      const res = await axios.get(`https://pos.ztesting.site/backend/stock/list?page=1&limit=10&keyword=${searchId}`);
+      const res = await axios.get(
+        `https://pos.ztesting.site/backend/stock/list?page=1&limit=10&keyword=${searchId}`
+      );
       const apiProducts = res.data?.data || res.data;
 
       if (apiProducts.length > 0) {
         setSearchResult(apiProducts[0]);
       } else {
         setSearchResult(null);
-        alert('No products found!');
+        alert("No products found!");
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
-      alert('Error fetching products');
+      console.error("Error fetching products:", error);
+      alert("Error fetching products");
     }
   };
 
-const handleAddToCart = (product) => {
-  const existingItem = cartItems.find(item => item._id === product._id);
-  if (existingItem) {
-    updateQuantity(product._id, existingItem.quantity + 1);
-  } else {
-    setCartItems([...cartItems, { ...product, quantity: 1 }]);
-  }
-  setSearchId('');
-  setSearchResult(null);
-};
+  const handleAddToCart = (product) => {
+    const existingItem = cartItems.find((item) => item._id === product._id);
+    if (existingItem) {
+      updateQuantity(product._id, existingItem.quantity + 1);
+    } else {
+      setCartItems([...cartItems, { ...product, quantity: 1 }]);
+    }
+    setSearchId("");
+    setSearchResult(null);
+  };
 
+  const updateQuantity = (_id, newQuantity) => {
+    if (newQuantity < 1) {
+      removeItem(_id);
+      return;
+    }
+    setCartItems(
+      cartItems.map((item) =>
+        item._id === _id ? { ...item, quantity: newQuantity } : item
+      )
+    );
+  };
 
-const updateQuantity = (_id, newQuantity) => {
-  if (newQuantity < 1) {
-    removeItem(_id);
-    return;
-  }
-  setCartItems(cartItems.map(item =>
-    item._id === _id ? { ...item, quantity: newQuantity } : item
-  ));
-};
-
-const removeItem = (_id) => {
-  setCartItems(cartItems.filter(item => item._id !== _id));
-};
-
+  const removeItem = (_id) => {
+    setCartItems(cartItems.filter((item) => item._id !== _id));
+  };
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((sum, item) => sum + (item.salePrice * item.quantity), 0);
+    return cartItems.reduce(
+      (sum, item) => sum + item.salePrice * item.quantity,
+      0
+    );
   };
 
   const calculateDiscount = () => {
     const subtotal = calculateSubtotal();
-    if (discountType === 'percentage') {
+    if (discountType === "percentage") {
       return (subtotal * discountValue) / 100;
     }
     return discountValue;
@@ -104,50 +138,57 @@ const removeItem = (_id) => {
 
   const handleGenerateBill = async () => {
     if (cartItems.length === 0) {
-      alert('Please add items to cart!');
+      alert("Please add items to cart!");
       return;
     }
 
     if (!staffId.trim()) {
-      alert('Please enter staff ID!');
+      alert("Please enter staff ID!");
       return;
     }
 
     if (!customerPay || parseFloat(customerPay) <= 0) {
-      alert('Please enter a valid payment amount!');
+      alert("Please enter a valid payment amount!");
       return;
     }
 
     // Prepare payload for API
     const payload = {
-      items: cartItems.map(item => ({
+      items: cartItems.map((item) => ({
         productId: item._id,
-        quantity: parseInt(item.quantity)
+        quantity: parseInt(item.quantity),
       })),
       discount: parseFloat(calculateDiscount().toFixed(2)),
       laborCost: parseFloat(laborCost) || 0,
       paymentMode: paymentMode,
       userPaidAmount: parseFloat(customerPay),
       staff: staffId,
-      shift: shift
+      shift: shift,
     };
 
-    console.log('Sending API Payload:', JSON.stringify(payload, null, 2));
+    console.log("Sending API Payload:", JSON.stringify(payload, null, 2));
 
     try {
-      // Call the API
-      const response = await axios.post('https://pos.ztesting.site/backend/bill/create', payload, {
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        "https://pos.ztesting.site/backend/bill/create",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      });
-      
-      console.log('API Response:', response.data);
+      );
 
-      // Prepare bill data for display
+      console.log("API Response:", response.data);
+
       const bill = {
-        billNo: response.data?.billId || response.data?.data?.billId || `BILL-${Date.now()}`,
-        date: response.data?.createdAt ? new Date(response.data.createdAt).toLocaleString() : new Date().toLocaleString(),
+        billNo:
+          response.data?.billId ||
+          response.data?.data?.billId ||
+          `BILL-${Date.now()}`,
+        date: response.data?.createdAt
+          ? new Date(response.data.createdAt).toLocaleString()
+          : new Date().toLocaleString(),
         items: cartItems,
         subtotal: calculateSubtotal(),
         discountType: discountType,
@@ -159,34 +200,35 @@ const removeItem = (_id) => {
         change: calculateChange(),
         cashierName: response.data?.data?.staff?.name || "Admin",
         shift: shift,
-        paymentMode: paymentMode
+        paymentMode: paymentMode,
       };
 
       setBillData(bill);
       setShowBillPopup(true);
 
-      // Reset form after successful bill generation
       setCartItems([]);
       setDiscountValue(0);
       setLaborCost(0);
-      setCustomerPay('');
-      
+      setCustomerPay("");
     } catch (error) {
-      console.error('Error creating bill:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.error || 
-                          error.message || 
-                          'Unknown error occurred';
-      
-      alert(`Error creating bill: ${errorMessage}\n\nPlease check the console for details.`);
+      console.error("Error creating bill:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        "Unknown error occurred";
+
+      alert(
+        `Error creating bill: ${errorMessage}\n\nPlease check the console for details.`
+      );
     }
   };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
+    const printWindow = window.open("", "", "width=800,height=600");
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -207,6 +249,12 @@ const removeItem = (_id) => {
             margin-bottom: 20px;
             border-bottom: 2px solid #1e3a8a;
             padding-bottom: 15px;
+          }
+          .company-logo {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 10px;
           }
           .receipt-header h2 {
             margin: 0 0 10px 0;
@@ -320,7 +368,9 @@ const removeItem = (_id) => {
 
   const handleDownload = () => {
     const billHTML = billRef.current.innerHTML;
-    const blob = new Blob([`
+    const blob = new Blob(
+      [
+        `
       <!DOCTYPE html>
       <html>
       <head>
@@ -335,10 +385,13 @@ const removeItem = (_id) => {
       </head>
       <body>${billHTML}</body>
       </html>
-    `], { type: 'text/html' });
+    `,
+      ],
+      { type: "text/html" }
+    );
 
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `bill-${billData?.billNo}.html`;
     a.click();
@@ -348,14 +401,14 @@ const removeItem = (_id) => {
     <div className="pos-container">
       <div className="pos-left-section">
         <h2 className="section-title">Available Products</h2>
-        
+
         <div className="search-section">
           <input
             type="text"
             placeholder="Search Product ID or Name"
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
             className="search-input"
           />
           <button onClick={handleSearch} className="btn-search">
@@ -368,9 +421,14 @@ const removeItem = (_id) => {
             <div className="result-details">
               <span className="result-id">{searchResult.productId}</span>
               <span className="result-name">{searchResult.productName}</span>
-              <span className="result-price">${searchResult.unitPrice?.toFixed(2) || '0.00'}</span>
+              <span className="result-price">
+                Rs. {searchResult.unitPrice?.toFixed(2) || "0.00"}
+              </span>
             </div>
-            <button onClick={() => handleAddToCart(searchResult)} className="btn-add">
+            <button
+              onClick={() => handleAddToCart(searchResult)}
+              className="btn-add"
+            >
               Add to Cart
             </button>
           </div>
@@ -390,15 +448,17 @@ const removeItem = (_id) => {
             <tbody>
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="empty-products">No products available</td>
+                  <td colSpan="4" className="empty-products">
+                    No products available
+                  </td>
                 </tr>
               ) : (
-                products.map(product => (
+                products.map((product) => (
                   <tr key={product.id}>
                     <td>{product.productId}</td>
                     <td>{product.productName}</td>
-                    <td>${product.unitPrice?.toFixed(2) || '0.00'}</td>
-                    <td>${product.salePrice?.toFixed(2) || '0.00'}</td>
+                    <td>Rs. {product.unitPrice?.toFixed(2) || "0.00"}</td>
+                    <td>Rs. {product.salePrice?.toFixed(2) || "0.00"}</td>
                     <td>
                       <button
                         onClick={() => handleAddToCart(product)}
@@ -413,7 +473,7 @@ const removeItem = (_id) => {
             </tbody>
           </table>
         </div>
-                <div className="cashier-section">
+        <div className="cashier-section">
           <div className="cashier-input-group">
             <label>Staff ID:</label>
             <input
@@ -426,15 +486,19 @@ const removeItem = (_id) => {
           </div>
           <div className="cashier-input-group">
             <label>Shift:</label>
-            <select value={shift} onChange={(e) => setShift(e.target.value)} className="shift-select">
+            <select
+              value={shift}
+              onChange={(e) => setShift(e.target.value)}
+              className="shift-select"
+            >
               <option value="morning">Morning</option>
               <option value="evening">Evening</option>
               <option value="night">Night</option>
             </select>
           </div>
         </div>
-        
-           <div className="cart-section">
+
+        <div className="cart-section">
           <table className="cart-table">
             <thead>
               <tr>
@@ -449,28 +513,43 @@ const removeItem = (_id) => {
             <tbody>
               {cartItems.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-cart">No items in cart</td>
+                  <td colSpan="5" className="empty-cart">
+                    No items in cart
+                  </td>
                 </tr>
               ) : (
-                cartItems.map(item => (
+                cartItems.map((item) => (
                   <tr key={item.productId}>
                     <td>{item.productName}</td>
                     <td>
                       <div className="quantity-control">
-                        <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="btn-qty">
+                        <button
+                          onClick={() =>
+                            updateQuantity(item._id, item.quantity - 1)
+                          }
+                          className="btn-qty"
+                        >
                           <Minus size={16} />
                         </button>
                         <span className="qty-display">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="btn-qty">
+                        <button
+                          onClick={() =>
+                            updateQuantity(item._id, item.quantity + 1)
+                          }
+                          className="btn-qty"
+                        >
                           <Plus size={16} />
                         </button>
                       </div>
                     </td>
-                    <td>${item.unitPrice?.toFixed(2) || '0.00'}</td>
-                    <td>${item.salePrice?.toFixed(2) || '0.00'}</td>
-                    <td>${(item.salePrice * item.quantity).toFixed(2)}</td>
+                    <td>Rs. {item.unitPrice?.toFixed(2) || "0.00"}</td>
+                    <td>Rs. {item.salePrice?.toFixed(2) || "0.00"}</td>
+                    <td>Rs. {(item.salePrice * item.quantity).toFixed(2)}</td>
                     <td>
-                      <button onClick={() => removeItem(item._id)} className="btn-delete">
+                      <button
+                        onClick={() => removeItem(item._id)}
+                        className="btn-delete"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -489,11 +568,13 @@ const removeItem = (_id) => {
         <div className="billing-summary">
           <div className="summary-row">
             <span>No of Items:</span>
-            <span>{cartItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
+            <span>
+              {cartItems.reduce((sum, item) => sum + item.quantity, 0)}
+            </span>
           </div>
           <div className="summary-row">
             <span>Subtotal:</span>
-            <span>${calculateSubtotal().toFixed(2)}</span>
+            <span>Rs. {calculateSubtotal().toFixed(2)}</span>
           </div>
 
           <div className="discount-section">
@@ -502,31 +583,35 @@ const removeItem = (_id) => {
                 <input
                   type="radio"
                   value="amount"
-                  checked={discountType === 'amount'}
+                  checked={discountType === "amount"}
                   onChange={(e) => setDiscountType(e.target.value)}
                 />
-                Amount ($)
+                Amount (Rs.)
               </label>
               <label>
                 <input
                   type="radio"
                   value="percentage"
-                  checked={discountType === 'percentage'}
+                  checked={discountType === "percentage"}
                   onChange={(e) => setDiscountType(e.target.value)}
                 />
                 Percentage (%)
               </label>
             </div>
             <div className="summary-row">
-              <span>Discount {discountType === 'percentage' ? '(%)' : '($)'}:</span>
+              <span>
+                Discount {discountType === "percentage" ? "(%)" : "(Rs.)"}:
+              </span>
               <input
                 type="number"
                 value={discountValue}
-                onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                onChange={(e) =>
+                  setDiscountValue(parseFloat(e.target.value) || 0)
+                }
                 className="discount-input"
                 placeholder="0.00"
                 min="0"
-                max={discountType === 'percentage' ? '100' : undefined}
+                max={discountType === "percentage" ? "100" : undefined}
               />
             </div>
           </div>
@@ -534,13 +619,15 @@ const removeItem = (_id) => {
           {calculateDiscount() > 0 && (
             <div className="summary-row savings-row">
               <span>You Saved:</span>
-              <span className="savings-amount">-${calculateDiscount().toFixed(2)}</span>
+              <span className="savings-amount">
+                -Rs. {calculateDiscount().toFixed(2)}
+              </span>
             </div>
           )}
 
           <div className="labor-section">
             <div className="summary-row">
-              <span>Labor Cost ($):</span>
+              <span>Labor Cost (Rs.):</span>
               <input
                 type="number"
                 value={laborCost}
@@ -555,18 +642,24 @@ const removeItem = (_id) => {
           {laborCost > 0 && (
             <div className="summary-row labor-row">
               <span>Labor Added:</span>
-              <span className="labor-amount">+${parseFloat(laborCost).toFixed(2)}</span>
+              <span className="labor-amount">
+                +Rs. {parseFloat(laborCost).toFixed(2)}
+              </span>
             </div>
           )}
 
           <div className="summary-row total-row">
             <span>Total Amount:</span>
-            <span>${calculateTotal().toFixed(2)}</span>
+            <span>Rs. {calculateTotal().toFixed(2)}</span>
           </div>
 
           <div className="summary-row">
             <span>Payment Mode:</span>
-            <select value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} className="payment-select">
+            <select
+              value={paymentMode}
+              onChange={(e) => setPaymentMode(e.target.value)}
+              className="payment-select"
+            >
               <option value="cash">Cash</option>
               <option value="card">Card</option>
               <option value="upi">UPI</option>
@@ -586,7 +679,7 @@ const removeItem = (_id) => {
           </div>
           <div className="summary-row">
             <span>Change:</span>
-            <span>${calculateChange().toFixed(2)}</span>
+            <span>Rs. {calculateChange().toFixed(2)}</span>
           </div>
         </div>
 
@@ -599,11 +692,12 @@ const removeItem = (_id) => {
       {showBillPopup && billData && (
         <div className="bill-popup-overlay">
           <div className="bill-popup-container">
-            <button onClick={() => setShowBillPopup(false)} className="btn-close-popup">
+            <button
+              onClick={() => setShowBillPopup(false)}
+              className="btn-close-popup"
+            >
               <X size={20} />
             </button>
-
-            {/* <h2 className="bill-popup-title">Bill Receipt</h2> */}
 
             <div ref={billRef} className="bill-receipt">
               <div className="receipt-header">
@@ -614,13 +708,26 @@ const removeItem = (_id) => {
 
               <div className="receipt-info">
                 <div className="Bill-date">
-                  <p><strong>Bill No:</strong> {billData.billNo}</p>
-                  <p><strong>Date:</strong> {billData.date}</p>
+                  <p>
+                    <strong>Bill No:</strong> {billData.billNo}
+                  </p>
+                  <p>
+                    <strong>Date:</strong> {billData.date}
+                  </p>
                 </div>
                 <div className="Cashier-info">
-                  <p><strong>Cashier:</strong> {billData.cashierName}</p>
-                  <p><strong>Shift:</strong> {billData.shift.charAt(0).toUpperCase() + billData.shift.slice(1)}</p>
-                  <p><strong>Payment:</strong> {billData.paymentMode.toUpperCase()}</p>
+                  <p>
+                    <strong>Cashier:</strong> {billData.cashierName}
+                  </p>
+                  <p>
+                    <strong>Shift:</strong>{" "}
+                    {billData.shift.charAt(0).toUpperCase() +
+                      billData.shift.slice(1)}
+                  </p>
+                  <p>
+                    <strong>Payment:</strong>{" "}
+                    {billData.paymentMode.toUpperCase()}
+                  </p>
                 </div>
               </div>
 
@@ -634,12 +741,12 @@ const removeItem = (_id) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {billData.items.map(item => (
+                  {billData.items.map((item) => (
                     <tr key={item.id}>
                       <td>{item.productName}</td>
                       <td>{item.quantity}</td>
-                      <td>${item.salePrice?.toFixed(2)}</td>
-                      <td>${(item.salePrice * item.quantity).toFixed(2)}</td>
+                      <td>Rs. {item.salePrice?.toFixed(2)}</td>
+                      <td>Rs. {(item.salePrice * item.quantity).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -648,37 +755,43 @@ const removeItem = (_id) => {
               <div className="receipt-summary">
                 <div className="summary-line">
                   <span>Subtotal:</span>
-                  <span>${billData.subtotal.toFixed(2)}</span>
+                  <span>Rs. {billData.subtotal.toFixed(2)}</span>
                 </div>
                 {billData.discount > 0 && (
                   <>
                     <div className="summary-line">
-                      <span>Discount ({billData.discountType === 'percentage' ? `${billData.discountValue}%` : `$${billData.discountValue}`}):</span>
-                      <span>-${billData.discount.toFixed(2)}</span>
+                      <span>
+                        Discount (
+                        {billData.discountType === "percentage"
+                          ? `${billData.discountValue}%`
+                          : `Rs. ${billData.discountValue}`}
+                        ):
+                      </span>
+                      <span>-Rs. {billData.discount.toFixed(2)}</span>
                     </div>
                     <div className="summary-line savings-highlight">
                       <span>Discounted Amount (You Saved):</span>
-                      <span>${billData.discount.toFixed(2)}</span>
+                      <span>Rs. {billData.discount.toFixed(2)}</span>
                     </div>
                   </>
                 )}
                 {billData.laborCost > 0 && (
                   <div className="summary-line labor-highlight">
                     <span>Labor Cost:</span>
-                    <span>+${billData.laborCost.toFixed(2)}</span>
+                    <span>+Rs. {billData.laborCost.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="summary-line total">
                   <span>Total:</span>
-                  <span>${billData.total.toFixed(2)}</span>
+                  <span>Rs. {billData.total.toFixed(2)}</span>
                 </div>
                 <div className="summary-line">
                   <span>Paid:</span>
-                  <span>${billData.customerPaid.toFixed(2)}</span>
+                  <span>Rs. {billData.customerPaid.toFixed(2)}</span>
                 </div>
                 <div className="summary-line">
                   <span>Change:</span>
-                  <span>${billData.change.toFixed(2)}</span>
+                  <span>Rs. {billData.change.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -687,7 +800,9 @@ const removeItem = (_id) => {
                 <p>Visit again</p>
                 <div className="watermark">
                   <p>Software Powered by</p>
-                  <p><strong>Zemalt PVT LTD</strong></p>
+                  <p>
+                    <strong>Zemalt PVT LTD</strong>
+                  </p>
                   <p className="phone-contact">
                     <FaPhoneAlt className="phone-icon" />
                     <span>03285522005</span>

@@ -503,7 +503,6 @@
   background: #1e40af;
 }
 
-/* Bill Popup Modal */
 .bill-popup-overlay {
   position: fixed;
   top: 0;
@@ -560,7 +559,6 @@
   letter-spacing: 1px;
 }
 
-/* Bill Receipt */
 .bill-receipt {
   background: white;
   border: 1px solid #e5e7eb;
@@ -612,7 +610,6 @@
   margin-bottom: 8px;
 }
 
-/* Receipt Table */
 .receipt-table {
   width: 100%;
   border-collapse: collapse;
@@ -635,7 +632,6 @@
   font-size: 12px;
 }
 
-/* Receipt Summary */
 .receipt-summary {
   border-top: 2px solid #1e3a8a;
   padding-top: 15px;
@@ -675,7 +671,6 @@
   margin: 5px 0;
 }
 
-/* Receipt Footer */
 .receipt-footer {
   text-align: center;
   margin-top: 20px;
@@ -727,7 +722,6 @@
   letter-spacing: 0.5px;
 }
 
-/* Bill Actions */
 .bill-actions {
   display: flex;
   gap: 10px;
@@ -755,7 +749,6 @@
   background: #1e40af;
 }
 
-/* Responsive Design */
 @media (max-width: 1200px) {
   .pos-container {
     grid-template-columns: 1fr;
