@@ -4,6 +4,7 @@ import { MdOutlineDoubleArrow } from "react-icons/md";
 import { IoIosReturnLeft } from "react-icons/io";
 
 import { FaMoneyBillWave } from "react-icons/fa";
+import { FaReceipt } from "react-icons/fa";
 
 import { IoLogOut } from "react-icons/io5";
 import {
@@ -18,6 +19,7 @@ import Dashboard from "./Pages/Dashboard/Dashboard";
 import Users from "./Pages/Users/Users";
 import StockM from "./Pages/Stock M/StockM";
 import Roles from "./Pages/Roles/Roles";
+import Expense from "./Pages/Expense/Expense"
 import logo from "./Assets/IbrahimMotors.png";
 import POSBillingSystem from "./Components/POS/Pos"
 import ReturnManagement from "./Components/POS/Return"
@@ -35,8 +37,10 @@ const App = ({ onLogout }) => {
     { id: 2, name: "Roles", route: "/rolesData", icon: <FaUserShield /> },
     { id: 3, name: "Users", route: "/usersData", icon: <FaUsers /> },
     { id: 4, name: "Stock Management", route: "/stockData", icon: <FaWarehouse /> },
+    {id: 7, name:"Expense" , route:"/ExpenseData" , icon: <FaReceipt />},
     {id: 5, name:"Billing" , route:"/billData" , icon: <FaMoneyBillWave />},
-    {id: 6, name:"Returns" , route:"/ReturnData" , icon: <IoIosReturnLeft />}
+    {id: 6, name:"Returns" , route:"/ReturnData" , icon: <IoIosReturnLeft />},
+     
   ];
 
   // ✅ Update active item when route changes
@@ -116,6 +120,7 @@ const App = ({ onLogout }) => {
           <Route path="/stockData" element={<StockM />} />
           <Route path="/billData" element={<POSBillingSystem />} />
           <Route path="/ReturnData" element={<ReturnManagement />} />
+          <Route path="/ExpenseData" element={<Expense />} />
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

@@ -54,3 +54,15 @@ export const createStockM = async (data) => {
   return invokeApi(reqObj);
 };
 
+export const createExpense = async (data) => {
+
+  const reqObj = {
+    path: "/stock/create",
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: data,
+  };
+  return invokeApi(reqObj);
+};

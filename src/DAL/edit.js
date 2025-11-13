@@ -32,4 +32,14 @@ export const updateStock = async (id,data) => {
   };
   return invokeApi(reqObj);
 };
+export const updateExpense = async (id,data) => {
+ 
+  const reqObj = {
+    path: `/stock/update/${id}`,
+    method: "PUT",
+    headers: {      Authorization: `Bearer ${localStorage.getItem("Token")}`,},
+    postData: data,
+  };
+  return invokeApi(reqObj);
+};
 

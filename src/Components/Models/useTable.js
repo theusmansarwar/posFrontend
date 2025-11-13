@@ -20,16 +20,18 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { fetchallroleslist, fetchallStocklist, fetchalluserlist } from "../../DAL/fetch";
+import { fetchallroleslist, fetchallStocklist, fetchalluserlist,fetchallExpenselist } from "../../DAL/fetch";
 import { formatDate } from "../../Utils/Formatedate";
 import truncateText from "../../truncateText";
 import { useNavigate } from "react-router-dom";
-import { deleteAllRoles, deleteAllStock, deleteAllUsers } from "../../DAL/delete";
+import { deleteAllRoles, deleteAllStock, deleteAllUsers,deleteAllExpense } from "../../DAL/delete";
 import { useAlert } from "../Alert/AlertContext";
 import DeleteModal from "./confirmDeleteModel";
 import AddUsers from "./addUsers";
 import AddRoles from "./AddRoles";
 import AddStock from "./addStockM";
+import AddExpense from "./AddExpense";
+
 
 
 export function useTable({ attributes, tableType, limitPerPage = 10 }) {
@@ -49,6 +51,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [openRolesModal, setOpenRolesModal] = useState(false);
   const [openUserModal, setOpenUserModal] = useState(false);
   const [openStockModal, setOpenStockModal] = useState(false);
+  const [openExpenseModal, setOpenExpenseModal] = useState(false);
   const [modeltype, setModeltype] = useState("Add");
   const [modelData, setModelData] = useState({});
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -116,6 +119,18 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(response.totalRecords);
       }
     }
+    else if (tableType === "Expense") {
+      response = await fetchallStocklist(page, rowsPerPage, searchQuery);
+      if (response.status == 400) {
+        localStorage.removeItem("Token");
+        navigate("/login");
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
+        setData(response.data);
+        setTotalRecords(response.totalRecords);
+      }
+    }
   };
 
   const handleSelectAllClick = (event) => {
@@ -159,6 +174,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setModelData(category);
       setModeltype("Update");
     }
+    else if (tableType === "Expense") {
+      setOpenExpenseModal(true);
+      setModelData(category);
+      setModeltype("Update");
+    }
 
   };
 
@@ -178,6 +198,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       }
 
       else if (tableType === "Stock") {
+        response = await deleteAllStock({ ids: selected });
+      }
+      else if (tableType === "Expense") {
         response = await deleteAllStock({ ids: selected });
       }
 
@@ -209,6 +232,12 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
 
     else if (tableType === "Stock") {
       setOpenStockModal(true);
+      setModeltype("Add");
+      setModelData();
+    }
+
+    else if (tableType === "Expense") {
+      setOpenExpenseModal(true);
       setModeltype("Add");
       setModelData();
     }
@@ -260,6 +289,16 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
             Modeltype={modeltype}
             Modeldata={modelData}
             onResponse={handleResponse}
+          />
+        )}
+
+         {openExpenseModal && (
+          <AddExpense
+            open={openExpenseModal}
+            setOpen={setOpenExpenseModal}
+            Modeltype={modeltype}
+            Modeldata={modelData}
+            onResponse={handleResponse} 
           />
         )}
 

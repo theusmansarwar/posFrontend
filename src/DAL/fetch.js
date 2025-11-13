@@ -89,3 +89,16 @@ export const fetchallStocklist = async (page, rowsPerPages,searchQuery) => {
   };
   return invokeApi(reqObj);
 };
+
+export const fetchallExpenselist = async (page, rowsPerPages,searchQuery) => {
+  const reqObj = {
+    path: `/stock/list?limit=${rowsPerPages}&page=${page}&keyword=${searchQuery}`,
+    method: "GET",
+    headers: {
+       Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+
+    postData: {},
+  };
+  return invokeApi(reqObj);
+};

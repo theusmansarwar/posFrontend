@@ -42,3 +42,17 @@ export const deleteAllStock = async (data) => {
   return invokeApi(reqObj);
 };
 
+export const deleteAllExpense = async (data) => {
+  const reqObj = {
+    path: `/stock/deleteMultiple`,
+    method: "DELETE", // Ensure correct capitalization
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: data,
+  };
+  
+  return invokeApi(reqObj);
+};
+
