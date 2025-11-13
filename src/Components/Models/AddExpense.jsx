@@ -28,7 +28,7 @@ export default function AddExpense({
   Modeldata,
   onResponse,
 }) {
-  const [expenseName, setExpenseName] = useState(Modeldata?.expenseName || "");
+  const [name, setname] = useState(Modeldata?.name || "");
   const [comment, setComment] = useState(Modeldata?.comment || "");
   const [amount, setAmount] = useState(Modeldata?.amount || "");
   const [createdAt, setCreatedAt] = useState(Modeldata?.createdAt || "");
@@ -38,7 +38,7 @@ export default function AddExpense({
   // Populate fields when editing
   useEffect(() => {
     if (Modeldata) {
-      setExpenseName(Modeldata?.expenseName || "");
+      setname(Modeldata?.name || "");
       setComment(Modeldata?.comment || "");
       setAmount(Modeldata?.amount || "");
       setCreatedAt(Modeldata?.createdAt ? Modeldata.createdAt.split("T")[0] : "");
@@ -58,7 +58,7 @@ export default function AddExpense({
 
     const newErrors = {};
 
-    if (!expenseName?.trim()) newErrors.expenseName = "Expense name is required";
+    if (!name?.trim()) newErrors.name = "Expense name is required";
     if (!amount || amount <= 0) newErrors.amount = "Amount must be greater than 0";
     if (!createdAt) newErrors.createdAt = "Date is required";
 
@@ -68,7 +68,7 @@ export default function AddExpense({
     }
 
     const expenseData = {
-      expenseName,
+      name,
       comment,
       amount: Number(amount),
       createdAt,
@@ -94,7 +94,7 @@ export default function AddExpense({
         });
 
         if (Modeltype === "Add") {
-          setExpenseName("");
+          setname("");
           setComment("");
           setAmount("");
           setCreatedAt("");
@@ -135,10 +135,10 @@ export default function AddExpense({
           <TextField
             fullWidth
             label="Expense Name"
-            value={expenseName}
-            onChange={(e) => setExpenseName(e.target.value)}
-            error={!!errors.expenseName}
-            helperText={errors.expenseName}
+            value={name}
+            onChange={(e) => setname(e.target.value)}
+            error={!!errors.name}
+            helperText={errors.name}
           />
           <TextField
             fullWidth

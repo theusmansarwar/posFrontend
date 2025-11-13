@@ -44,7 +44,7 @@ export const deleteAllStock = async (data) => {
 
 export const deleteAllExpense = async (data) => {
   const reqObj = {
-    path: `/stock/deleteMultiple`,
+    path: `/expence/multipleDelete`,
     method: "DELETE", // Ensure correct capitalization
     headers: {
       "Content-Type": "application/json",

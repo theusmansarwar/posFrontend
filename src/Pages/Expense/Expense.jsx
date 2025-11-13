@@ -5,7 +5,7 @@ const ExpenseM = () => {
    
   const attributes = [
     { id: "expenseId", label: "Expense Id" },
-    { id: "expenseName", label: "Expense Name" },
+    { id: "name", label: "Expense Name" },
     { id: "comment", label: "Comment" },
     { id: "amount", label: "Amount" },
     { id: "createdAt", label: "Created At" },

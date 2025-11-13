@@ -120,7 +120,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       }
     }
     else if (tableType === "Expense") {
-      response = await fetchallStocklist(page, rowsPerPage, searchQuery);
+      response = await fetchallExpenselist(page, rowsPerPage, searchQuery);
       if (response.status == 400) {
         localStorage.removeItem("Token");
         navigate("/login");
@@ -201,7 +201,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         response = await deleteAllStock({ ids: selected });
       }
       else if (tableType === "Expense") {
-        response = await deleteAllStock({ ids: selected });
+        response = await deleteAllExpense({ ids: selected });
       }
 
       if (response.status === 200) {
