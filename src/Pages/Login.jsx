@@ -31,11 +31,9 @@ const Login = ({ onLoginSuccess }) => {
     }
   }, []);
 
-  // 🔹 Handle login click
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Step 1: Reset old errors
     setErrors({ email: "", password: "" });
 
     // Step 2: Front-end validation
@@ -53,10 +51,8 @@ const Login = ({ onLoginSuccess }) => {
 
     setErrors(newErrors);
 
-    // Stop if any field is empty
     if (hasError) return;
 
-    // Step 3: Call API
     setLoading(true);
 
     const formData = new FormData();
@@ -66,15 +62,42 @@ const Login = ({ onLoginSuccess }) => {
     try {
       const result = await login(formData);
 
+      console.log(" Login API Response:", result);
+
       if (result.status === 200) {
         showAlert("success", result?.message || "Login successful!");
+        
         localStorage.setItem("Token", result?.token);
-        localStorage.setItem("user", JSON.stringify(result?.data));
+        
+        const userData = {
+          id: result.data.id,
+          name: result.data.name,
+          email: result.data.email,
+          role: {
+            _id: result.data.role._id,
+            name: result.data.role.name,
+            description: result.data.role.description,
+            Modules: result.data.role.Modules  
+          }
+        };
+
+        console.log("💾 Saving userData to localStorage:", userData);
+        localStorage.setItem("userData", JSON.stringify(userData));
+
+        const saved = localStorage.getItem("userData");
+        console.log("Verified saved userData:", saved);
+        console.log(" Parsed modules:", JSON.parse(saved).role.Modules);
+
         onLoginSuccess();
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       } else {
         showAlert("error", result?.message || "Login failed.");
       }
     } catch (error) {
+      console.error(" Login Error:", error);
       if (error.response) {
         showAlert("error", error.response.data.message || "An error occurred.");
       } else if (error.request) {

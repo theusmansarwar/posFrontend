@@ -2,10 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate, Navigate } from "react-router-dom";
 import { MdOutlineDoubleArrow } from "react-icons/md";
 import { IoIosReturnLeft } from "react-icons/io";
-
 import { FaMoneyBillWave } from "react-icons/fa";
-import { FaReceipt } from "react-icons/fa";
-
 import { IoLogOut } from "react-icons/io5";
 import {
   FaTachometerAlt,
@@ -19,10 +16,9 @@ import Dashboard from "./Pages/Dashboard/Dashboard";
 import Users from "./Pages/Users/Users";
 import StockM from "./Pages/Stock M/StockM";
 import Roles from "./Pages/Roles/Roles";
-import Expense from "./Pages/Expense/Expense"
 import logo from "./Assets/IbrahimMotors.png";
-import POSBillingSystem from "./Components/POS/Pos"
-import ReturnManagement from "./Components/POS/Return"
+import POSBillingSystem from "./Components/POS/Pos";
+import ReturnManagement from "./Components/POS/Return";
 import { Tooltip } from "@mui/material";
 
 const App = ({ onLogout }) => {
@@ -30,24 +26,92 @@ const App = ({ onLogout }) => {
   const location = useLocation();
   const [activeitems, setActiveitems] = useState(null);
   const [isOpen, setIsOpen] = useState(true);
+  const [userModules, setUserModules] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
 
-  // ✅ All sidebar items
+  // ✅ All sidebar items (complete list)
   const allItems = [
-    { id: 1, name: "Dashboard", route: "/dashboard", icon: <FaTachometerAlt /> },
-    { id: 2, name: "Roles", route: "/rolesData", icon: <FaUserShield /> },
-    { id: 3, name: "Users", route: "/usersData", icon: <FaUsers /> },
-    { id: 4, name: "Stock Management", route: "/stockData", icon: <FaWarehouse /> },
-    {id: 7, name:"Expense" , route:"/ExpenseData" , icon: <FaReceipt />},
-    {id: 5, name:"Billing" , route:"/billData" , icon: <FaMoneyBillWave />},
-    {id: 6, name:"Returns" , route:"/ReturnData" , icon: <IoIosReturnLeft />},
-     
+    { id: 1, name: "Dashboard", route: "/dashboard", icon: <FaTachometerAlt />, module: "Dashboard" },
+    { id: 2, name: "Roles", route: "/rolesData", icon: <FaUserShield />, module: "Roles" },
+    { id: 3, name: "Users", route: "/usersData", icon: <FaUsers />, module: "Users" },
+    { id: 4, name: "Stock Management", route: "/stockData", icon: <FaWarehouse />, module: "Stock Management" },
+    { id: 5, name: "Billing", route: "/billData", icon: <FaMoneyBillWave />, module: "Billing" },
+    { id: 6, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" }
   ];
+
+  // ✅ Get user modules from localStorage on component mount
+  useEffect(() => {
+    try {
+      const userDataString = localStorage.getItem("userData");
+      console.log("🔍 Raw userData from localStorage:", userDataString);
+      
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        console.log("📌 Parsed User Data:", userData);
+        console.log("📌 User Role:", userData?.role);
+        
+        // ✅ Try multiple possible locations for modules
+        let modules = [];
+        
+        // Check different possible structures
+        if (userData?.role?.Modules && Array.isArray(userData.role.Modules)) {
+          modules = userData.role.Modules;
+          console.log("✅ Found modules in role.Modules:", modules);
+        } else if (userData?.role?.modules && Array.isArray(userData.role.modules)) {
+          modules = userData.role.modules;
+          console.log("✅ Found modules in role.modules (lowercase):", modules);
+        } else if (userData?.Modules && Array.isArray(userData.Modules)) {
+          modules = userData.Modules;
+          console.log("✅ Found modules in userData.Modules:", modules);
+        } else if (userData?.modules && Array.isArray(userData.modules)) {
+          modules = userData.modules;
+          console.log("✅ Found modules in userData.modules:", modules);
+        } else {
+          console.warn("⚠️ No modules found in userData structure");
+          console.log("userData structure:", JSON.stringify(userData, null, 2));
+        }
+        
+        console.log("📌 Final User Modules:", modules);
+        setUserModules(modules);
+      } else {
+        console.warn("⚠️ No userData found in localStorage");
+      }
+    } catch (error) {
+      console.error("❌ Error parsing user data:", error);
+    }
+  }, []);
+
+  // ✅ Filter menu items based on user modules
+  useEffect(() => {
+    console.log("🔄 Filtering items. User modules:", userModules);
+    
+    if (userModules.length > 0) {
+      const filtered = allItems.filter(item => {
+        const hasModule = userModules.includes(item.module);
+        console.log(`  ${item.name} (${item.module}): ${hasModule ? '✅' : '❌'}`);
+        return hasModule;
+      });
+      
+      console.log("📌 Filtered Items:", filtered.map(i => i.name));
+      setFilteredItems(filtered);
+      
+      // ✅ If current route is not accessible, redirect to first available module
+      const currentItem = filtered.find(item => item.route === location.pathname);
+      if (!currentItem && filtered.length > 0 && location.pathname !== "/") {
+        console.log("🔀 Redirecting to:", filtered[0].route);
+        navigate(filtered[0].route);
+      }
+    } else {
+      console.warn("⚠️ No modules found - showing all items (fallback)");
+      setFilteredItems(allItems);
+    }
+  }, [userModules, location.pathname]);
 
   // ✅ Update active item when route changes
   useEffect(() => {
-    const currentItem = allItems.find((item) => item.route === location.pathname);
+    const currentItem = filteredItems.find((item) => item.route === location.pathname);
     setActiveitems(currentItem?.id || null);
-  }, [location.pathname]);
+  }, [location.pathname, filteredItems]);
 
   const handleitemsClick = (item) => {
     setActiveitems(item.id);
@@ -62,6 +126,16 @@ const App = ({ onLogout }) => {
     localStorage.setItem("lastRoute", location.pathname);
   }, [location.pathname]);
 
+  // ✅ Check if user has access to current route
+  const hasAccess = (route) => {
+    // If no modules are set (empty array), allow access (fallback for admin or errors)
+    if (userModules.length === 0) return true;
+    
+    const hasIt = filteredItems.some(item => item.route === route);
+    console.log(`🔐 Access check for ${route}:`, hasIt);
+    return hasIt;
+  };
+
   return (
     <div className="App">
       {/* Sidebar */}
@@ -73,7 +147,8 @@ const App = ({ onLogout }) => {
         <img src={logo} className="logo" alt="ims Logo" />
 
         <ul>
-          {allItems.map((item) => {
+          {/* ✅ Show only filtered items based on user role */}
+          {filteredItems.map((item) => {
             const listItem = (
               <li
                 key={item.id}
@@ -114,15 +189,42 @@ const App = ({ onLogout }) => {
       {/* Right Side Content / Routes */}
       <div className="app-right">
         <Routes>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/rolesData" element={<Roles />} />
-          <Route path="/usersData" element={<Users />} />
-          <Route path="/stockData" element={<StockM />} />
-          <Route path="/billData" element={<POSBillingSystem />} />
-          <Route path="/ReturnData" element={<ReturnManagement />} />
-          <Route path="/ExpenseData" element={<Expense />} />
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* ✅ Protected routes - only render if user has access */}
+          <Route 
+            path="/dashboard" 
+            element={hasAccess("/dashboard") ? <Dashboard /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          />
+          <Route 
+            path="/rolesData" 
+            element={hasAccess("/rolesData") ? <Roles /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          />
+          <Route 
+            path="/usersData" 
+            element={hasAccess("/usersData") ? <Users /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          />
+          <Route 
+            path="/stockData" 
+            element={hasAccess("/stockData") ? <StockM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          />
+          <Route 
+            path="/billData" 
+            element={hasAccess("/billData") ? <POSBillingSystem /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          />
+          <Route 
+            path="/ReturnData" 
+            element={hasAccess("/ReturnData") ? <ReturnManagement /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          />
+          
+          {/* ✅ Default redirect to first available module */}
+          <Route 
+            path="*" 
+            element={
+              <Navigate 
+                to={filteredItems.length > 0 ? filteredItems[0].route : "/dashboard"} 
+                replace 
+              />
+            } 
+          />
         </Routes>
       </div>
     </div>
