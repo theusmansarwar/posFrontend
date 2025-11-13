@@ -11,14 +11,12 @@ const Roles = () => {
     { id: "status", label: "Status" },
   ];
 
-  // custom render for modules array
   const customRender = {
-    modules: (value) => value.join(", "), // join modules array into string
+    modules: (value) => value.join(", "), 
   };
 
   const { tableUI } = useTable({
     attributes,
-    // pageData: rolesData,
     tableType: "Roles",
     customRender,
   });
