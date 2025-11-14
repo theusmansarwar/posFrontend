@@ -47,15 +47,15 @@ const App = ({ onLogout }) => {
     try {
       const userDataString = localStorage.getItem("userData");
       console.log("🔍 Raw userData from localStorage:", userDataString);
-      
+
       if (userDataString) {
         const userData = JSON.parse(userDataString);
         console.log("📌 Parsed User Data:", userData);
         console.log("📌 User Role:", userData?.role);
-        
+
         // ✅ Try multiple possible locations for modules
         let modules = [];
-        
+
         // Check different possible structures
         if (userData?.role?.Modules && Array.isArray(userData.role.Modules)) {
           modules = userData.role.Modules;
@@ -73,7 +73,7 @@ const App = ({ onLogout }) => {
           console.warn("⚠️ No modules found in userData structure");
           console.log("userData structure:", JSON.stringify(userData, null, 2));
         }
-        
+
         console.log("📌 Final User Modules:", modules);
         setUserModules(modules);
       } else {
@@ -87,17 +87,17 @@ const App = ({ onLogout }) => {
   // ✅ Filter menu items based on user modules
   useEffect(() => {
     console.log("🔄 Filtering items. User modules:", userModules);
-    
+
     if (userModules.length > 0) {
       const filtered = allItems.filter(item => {
         const hasModule = userModules.includes(item.module);
         console.log(`  ${item.name} (${item.module}): ${hasModule ? '✅' : '❌'}`);
         return hasModule;
       });
-      
+
       console.log("📌 Filtered Items:", filtered.map(i => i.name));
       setFilteredItems(filtered);
-      
+
       // ✅ If current route is not accessible, redirect to first available module
       const currentItem = filtered.find(item => item.route === location.pathname);
       if (!currentItem && filtered.length > 0 && location.pathname !== "/") {
@@ -112,9 +112,18 @@ const App = ({ onLogout }) => {
 
   // ✅ Update active item when route changes
   useEffect(() => {
-    const currentItem = filteredItems.find((item) => item.route === location.pathname);
-    setActiveitems(currentItem?.id || null);
+    if (filteredItems.length > 0) {
+      const currentItem = filteredItems.find(item => item.route === location.pathname);
+
+      if (currentItem) {
+        setActiveitems(currentItem.id);
+      } else {
+        // If no active route found, select first allowed route (Dashboard)
+        setActiveitems(filteredItems[0].id);
+      }
+    }
   }, [location.pathname, filteredItems]);
+
 
   const handleitemsClick = (item) => {
     setActiveitems(item.id);
@@ -133,7 +142,7 @@ const App = ({ onLogout }) => {
   const hasAccess = (route) => {
     // If no modules are set (empty array), allow access (fallback for admin or errors)
     if (userModules.length === 0) return true;
-    
+
     const hasIt = filteredItems.some(item => item.route === route);
     console.log(`🔐 Access check for ${route}:`, hasIt);
     return hasIt;
@@ -193,44 +202,44 @@ const App = ({ onLogout }) => {
       <div className="app-right">
         <Routes>
           {/* ✅ Protected routes - only render if user has access */}
-          <Route 
-            path="/dashboard" 
-            element={hasAccess("/dashboard") ? <Dashboard /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/dashboard"
+            element={hasAccess("/dashboard") ? <Dashboard /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          <Route 
-            path="/rolesData" 
-            element={hasAccess("/rolesData") ? <Roles /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/rolesData"
+            element={hasAccess("/rolesData") ? <Roles /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          <Route 
-            path="/usersData" 
-            element={hasAccess("/usersData") ? <Users /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/usersData"
+            element={hasAccess("/usersData") ? <Users /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          <Route 
-            path="/stockData" 
-            element={hasAccess("/stockData") ? <StockM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/stockData"
+            element={hasAccess("/stockData") ? <StockM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          <Route 
-            path="/billData" 
-            element={hasAccess("/billData") ? <POSBillingSystem /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/billData"
+            element={hasAccess("/billData") ? <POSBillingSystem /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          <Route 
-            path="/ReturnData" 
-            element={hasAccess("/ReturnData") ? <ReturnManagement /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/ReturnData"
+            element={hasAccess("/ReturnData") ? <ReturnManagement /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-           <Route 
-            path="/ExpenseData" 
-            element={hasAccess("/ExpenseData") ? <ExpenseM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />} 
+          <Route
+            path="/ExpenseData"
+            element={hasAccess("/ExpenseData") ? <ExpenseM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          
+
           {/* ✅ Default redirect to first available module */}
-          <Route 
-            path="*" 
+          <Route
+            path="*"
             element={
-              <Navigate 
-                to={filteredItems.length > 0 ? filteredItems[0].route : "/dashboard"} 
-                replace 
+              <Navigate
+                to={filteredItems.length > 0 ? filteredItems[0].route : "/dashboard"}
+                replace
               />
-            } 
+            }
           />
         </Routes>
       </div>

@@ -1,60 +1,78 @@
-
-
-.dashboard{
-/* 
+.dashboard {
+    /* 
    box-shadow: var(--default-box-shadow);
   border-radius: var(--default-border-radius); */
 }
-.box{
+.loading-dashboard {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 80vh; /* covers most of viewport height */
+  text-align: center;
+  color: #333;
+}
+
+.box {
     height: 50px;
     width: calc(100% - 40px);
-    padding: 10px; 
+    padding: 10px;
     border-top-left-radius: 12px;
-   border-top-right-radius: 12px;
+    border-top-right-radius: 12px;
 }
-.heading-area{
+
+.heading-area {
     font-size: 24px;
     color: rgb(9, 9, 77);
     display: flex;
     justify-content: space-between;
 }
-.export{
-    padding: 8px 14px ;
+
+.export {
+    padding: 8px 14px;
     font-size: 18px;
     font-weight: 600;
     display: flex;
     align-items: center;
-      box-shadow: var(--default-box-shadow);
-  border-radius: var(--default-border-radius);
+    box-shadow: var(--default-box-shadow);
+    border-radius: var(--default-border-radius);
     gap: 5px;
+    cursor: pointer;
+    transition: 0.3s ease;
 }
-.subheading{
+.export:hover{
+    transform: scale(1.02);
+}
+
+.subheading {
     color: gray;
     font-size: 16px;
 }
-.box-area{
-  height: fit-content;
-  width: calc(100% - 40px);
-  background-color: white;
-  display: flex;
-  justify-content: space-around;
-   gap: 20px;
-   padding: 0px 20px ;
-   margin-bottom: 10px;
+
+.box-area {
+    height: fit-content;
+    width: calc(100% - 40px);
+    background-color: white;
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    padding: 0px 20px;
+    margin-bottom: 10px;
 
 }
-.box-item{
-   height: auto;
-   width: 20%;
-   display: flex;
-   flex-direction: column;
-   padding: 10px;
- box-shadow: var(--default-box-shadow);
-  border-radius: var(--default-border-radius); 
+
+.box-item {
+    height: auto;
+    width: 20%;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    box-shadow: var(--default-box-shadow);
+    border-radius: var(--default-border-radius);
 }
 
 
-.icon{
+.icon {
     font-size: 24px;
     border-radius: 50%;
     height: 40px;
@@ -64,12 +82,14 @@
     align-items: center;
     color: white;
 }
-.value{
+
+.value {
     font-size: 24px;
     font-weight: 600;
     margin-top: 10px;
 }
-.title{
+
+.title {
     font-size: 14px;
     margin-top: 10px;
 }

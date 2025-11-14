@@ -20,6 +20,26 @@ const ReturnManagement = () => {
 
   // Fetch recent bills on component mount
   useEffect(() => {
+
+
+    const loggedInUser = localStorage.getItem("userData");
+    if (loggedInUser) {
+      try {
+        const userData = JSON.parse(loggedInUser);
+        // Set staff ID from user data (adjust the property name based on your user object structure)
+        if (userData._id) {
+          setStaffId(userData._id);
+        } else if (userData.id) {
+          setStaffId(userData.id);
+        } else if (userData.username) {
+          setStaffId(userData.username);
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+
+
     fetchRecentBills();
   }, []);
 
@@ -63,7 +83,7 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
       const response = await fetch(`https://pos.ztesting.site/backend/bill/${searchBillId}`);
-      
+
       if (response.ok) {
         const result = await response.json();
         // Map API response to expected format
@@ -150,7 +170,7 @@ const ReturnManagement = () => {
 
       if (response.ok) {
         alert(`Successfully restocked ${item.returnQuantity} units of ${item.productName}`);
-        
+
         // Remove returned quantity from the item
         setReturnItems(returnItems.map(i => {
           if (i._id === _id) {
@@ -171,10 +191,10 @@ const ReturnManagement = () => {
     return returnItems.reduce((sum, item) => sum + (item.salePrice * item.returnQuantity), 0);
   };
 
-   
+
   const handleGenerateReturnReceipt = async () => {
     const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
-    
+
     if (itemsToReturn.length === 0) {
       alert('Please select items to return!');
       return;
@@ -238,7 +258,7 @@ const ReturnManagement = () => {
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
-        
+
       } else {
         const errorData = await response.json();
         console.error('Return error:', errorData);
@@ -428,10 +448,10 @@ const ReturnManagement = () => {
       {/* Left Side - Available Bills */}
       <div className="return-left-section">
         <h2 className="section-title">
-           
+
           Return Management
         </h2>
-        
+
         <div className="search-section">
           <input
             type="text"
@@ -446,7 +466,7 @@ const ReturnManagement = () => {
           </button>
         </div>
 
-        
+
 
         {selectedBill && (
           <div className="selected-bill-info">
@@ -460,7 +480,7 @@ const ReturnManagement = () => {
         )}
 
         <div className="cashier-section">
-          <div className="cashier-input-group">
+          {/* <div className="cashier-input-group">
             <label>Staff ID:</label>
             <input
               type="text"
@@ -469,7 +489,7 @@ const ReturnManagement = () => {
               onChange={(e) => setStaffId(e.target.value)}
               className="cashier-input"
             />
-          </div>
+          </div> */}
           <div className="cashier-input-group">
             <label>Shift:</label>
             <select value={shift} onChange={(e) => setShift(e.target.value)} className="shift-select">
@@ -503,8 +523,8 @@ const ReturnManagement = () => {
                     <td>{item.productName}</td>
                     <td>
                       <div className="quantity-control">
-                        <button 
-                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity - 1)} 
+                        <button
+                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity - 1)}
                           className="btn-qty"
                           disabled={item.returnQuantity === 0}
                         >
@@ -518,8 +538,8 @@ const ReturnManagement = () => {
                           min="0"
                           max={item.maxQuantity}
                         />
-                        <button 
-                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity + 1)} 
+                        <button
+                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity + 1)}
                           className="btn-qty"
                           disabled={item.returnQuantity >= item.maxQuantity}
                         >
@@ -530,8 +550,8 @@ const ReturnManagement = () => {
                     <td>Rs.{item.salePrice?.toFixed(2) || '0.00'}</td>
                     <td>Rs.{((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
                     <td>
-                      <button 
-                        onClick={() => handleDeleteItem(item._id)} 
+                      <button
+                        onClick={() => handleDeleteItem(item._id)}
                         className="btn-delete"
                         title="Remove from return list"
                       >
@@ -545,7 +565,7 @@ const ReturnManagement = () => {
           </table>
         </div>
 
-         <div className="recent-bills-section">
+        <div className="recent-bills-section">
           <h3 className="subsection-title">Recent Bills</h3>
           <div className="bills-table-container">
             <table className="bills-table">
@@ -570,7 +590,7 @@ const ReturnManagement = () => {
                   </tr>
                 ) : (
                   recentBills.map(bill => (
-                    <tr 
+                    <tr
                       key={bill._id}
                       className={selectedBill?._id === bill._id ? 'selected-row' : ''}
                     >
@@ -582,7 +602,7 @@ const ReturnManagement = () => {
                         <span className="payment-badge">{bill.paymentMode?.toUpperCase() || 'N/A'}</span>
                       </td>
                       <td>
-                        <button 
+                        <button
                           onClick={() => handleBillSelect(bill)}
                           className="btn-select-bill"
                         >
@@ -643,8 +663,8 @@ const ReturnManagement = () => {
           </div>
         </div>
 
-        <button 
-          onClick={handleGenerateReturnReceipt} 
+        <button
+          onClick={handleGenerateReturnReceipt}
           className="btn-generate-return"
           disabled={!selectedBill || returnItems.filter(i => i.returnQuantity > 0).length === 0 || loading}
         >

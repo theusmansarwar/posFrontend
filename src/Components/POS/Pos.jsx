@@ -12,6 +12,8 @@ import {
 import { FaPhoneAlt } from "react-icons/fa";
 import logoo from "../../Assets/logoo.jpg";
 import "./Pos.css";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
@@ -366,36 +368,43 @@ const POSBillingSystem = () => {
     printWindow.print();
   };
 
-  const handleDownload = () => {
-    const billHTML = billRef.current.innerHTML;
-    const blob = new Blob(
-      [
-        `
-      <!DOCTYPE html>
-      <html>
-      <head>
-      
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          .receipt { max-width: 400px; margin: 0 auto; }
-          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-          th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-          .total { font-weight: bold; font-size: 1.2em; }
-        </style>
-      </head>
-      <body>${billHTML}</body>
-      </html>
-    `,
-      ],
-      { type: "text/html" }
-    );
+ const handleDownload = async () => {
+  if (!billRef.current) return;
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `bill-${billData?.billNo}.html`;
-    a.click();
-  };
+  const element = billRef.current;
+
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+
+  // Resize image to fit the page while keeping aspect ratio
+  let imgWidth = pageWidth - 20; // margin 10 on each side
+  let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  // If still too tall, scale it further
+  if (imgHeight > pageHeight - 20) {
+    const scaleFactor = (pageHeight - 20) / imgHeight;
+    imgWidth *= scaleFactor;
+    imgHeight *= scaleFactor;
+  }
+
+  // Center horizontally
+  const xPosition = (pageWidth - imgWidth) / 2;
+  const yPosition = 10;
+
+  pdf.addImage(imgData, "PNG", xPosition, yPosition, imgWidth, imgHeight);
+  pdf.save(`Bill-${billData?.billNo}.pdf`);
+};
+
+
 
   return (
     <div className="pos-container">
@@ -699,7 +708,7 @@ const POSBillingSystem = () => {
               <X size={20} />
             </button>
 
-            <div ref={billRef} className="bill-receipt">
+            <div ref={billRef} className="bill-receipt" >
               <div className="receipt-header">
                 <img src={logoo} alt="Company Logo" className="company-logo" />
                 <h2>Ibrahim Autos & Wholesale</h2>
