@@ -20,11 +20,11 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist } from "../../DAL/fetch";
+import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist, fetchallBilllist } from "../../DAL/fetch";
 import { formatDate } from "../../Utils/Formatedate";
 import truncateText from "../../truncateText";
 import { useNavigate } from "react-router-dom";
-import { deleteAllRoles, deleteAllStock, deleteAllUsers, deleteAllExpense } from "../../DAL/delete";
+import { deleteAllRoles, deleteAllStock, deleteAllUsers, deleteAllExpense, deleteAllBills } from "../../DAL/delete";
 import { useAlert } from "../Alert/AlertContext";
 import DeleteModal from "./confirmDeleteModel";
 import AddUsers from "./addUsers";
@@ -32,6 +32,7 @@ import AddRoles from "./AddRoles";
 import AddStock from "./addStockM";
 import AddExpense from "./AddExpense";
 import AddNewStock from "./AddNewStock";
+import BillHistoryModal from "./BillHistoryModal";
 
 
 
@@ -54,6 +55,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [openStockModal, setOpenStockModal] = useState(false);
   const [openNewStockModal, setOpenNewStockModal] = useState(false);
   const [openExpenseModal, setOpenExpenseModal] = useState(false);
+  const [openBillModal, setOpenBillModal] = useState(false);
   const [modeltype, setModeltype] = useState("Add");
   const [modelData, setModelData] = useState({});
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -133,6 +135,18 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(response.totalRecords);
       }
     }
+    else if (tableType === "Bill History") {
+      response = await fetchallBilllist(page, rowsPerPage, searchQuery);
+      if (response.status == 400) {
+        localStorage.removeItem("Token");
+        navigate("/login");
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
+        setData(response.data);
+        setTotalRecords(response.totalRecords);
+      }
+    }
   };
 
   const handleSelectAllClick = (event) => {
@@ -181,6 +195,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setModelData(category);
       setModeltype("Update");
     }
+    else if (tableType === "Bill History") {
+      setOpenBillModal(true);
+      setModelData(category);
+      setModeltype("Update");
+    }
 
   };
   const handleAddNew = (category) => {
@@ -211,6 +230,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       }
       else if (tableType === "Expense") {
         response = await deleteAllExpense({ ids: selected });
+      }
+      else if (tableType === "Bill History") {
+        response = await deleteAllBills({ ids: selected });
       }
 
       if (response.status === 200) {
@@ -317,6 +339,14 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
             onResponse={handleResponse}
           />
         )}
+        {openBillModal && (
+          <BillHistoryModal
+            open={openBillModal}
+            setOpen={setOpenBillModal}
+            Modeldata={modelData}
+            onResponse={handleResponse}
+          />
+        )}
 
         <DeleteModal
           open={openDeleteModal}
@@ -367,20 +397,19 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   ),
                 }}
               />
-
               {selected.length > 0 ? (
                 <IconButton onClick={handleDeleteClick} sx={{ color: "red" }}>
                   <DeleteIcon />
                 </IconButton>
               ) : (
-                tableType !== "CategoriesNames" && (
+                tableType !== "CategoriesNames" && tableType !== "Bill History" && (
                   <Button
                     sx={{
                       background: "var(--horizontal-gradient)",
                       color: "var(--white-color)",
                       borderRadius: "var(--border-radius-secondary)",
                       "&:hover": { background: "var(--vertical-gradient)" },
-                      textTransform: "none"
+                      textTransform: "none",
                     }}
                     onClick={handleAddButton}
                   >
@@ -388,6 +417,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   </Button>
                 )
               )}
+
             </Toolbar>
             <TableContainer>
               <Table stickyHeader>

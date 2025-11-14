@@ -22,6 +22,7 @@ import POSBillingSystem from "./Components/POS/Pos";
 import ReturnManagement from "./Components/POS/Return";
 import { Tooltip } from "@mui/material";
 import ExpenseM from "./Pages/Expense/Expense";
+import BillHistory from "./Pages/BillHistory/BillHistory";
 
 const App = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -39,7 +40,8 @@ const App = ({ onLogout }) => {
     { id: 4, name: "Stock Management", route: "/stockData", icon: <FaWarehouse />, module: "Stock Management" },
     { id: 7, name: "Expense", route: "/ExpenseData", icon: <FaReceipt />, module: "Expense" },
     { id: 5, name: "Billing", route: "/billData", icon: <FaMoneyBillWave />, module: "Billing" },
-    { id: 6, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" }
+    { id: 6, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" },
+    { id: 7, name: "Bill History", route: "/bill-history", icon: <FaReceipt />  , module: "Bill History" }
   ];
 
   // ✅ Get user modules from localStorage on component mount
@@ -90,10 +92,11 @@ const App = ({ onLogout }) => {
 
     if (userModules.length > 0) {
       const filtered = allItems.filter(item => {
-        const hasModule = userModules.includes(item.module);
-        console.log(`  ${item.name} (${item.module}): ${hasModule ? '✅' : '❌'}`);
+        // Show item if user has access OR it's Bill History
+        const hasModule = userModules.includes(item.module) || item.module === "Bill History";
         return hasModule;
       });
+
 
       console.log("📌 Filtered Items:", filtered.map(i => i.name));
       setFilteredItems(filtered);
@@ -230,6 +233,7 @@ const App = ({ onLogout }) => {
             path="/ExpenseData"
             element={hasAccess("/ExpenseData") ? <ExpenseM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
+          <Route path="/bill-history" element={<BillHistory />} />
 
           {/* ✅ Default redirect to first available module */}
           <Route
