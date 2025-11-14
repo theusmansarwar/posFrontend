@@ -229,13 +229,17 @@ const POSBillingSystem = () => {
     }
   };
 
-  const handlePrint = () => {
+
+const handlePrint = () => {
+    // Get the actual logo element from the current document
+    const logoElement = billRef.current?.querySelector('.company-logo');
+    const logoSrc = logoElement?.src || logoo;
+    
     const printWindow = window.open("", "", "width=800,height=600");
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
-    
         <style>
           body { 
             font-family: Arial, sans-serif; 
@@ -301,6 +305,12 @@ const POSBillingSystem = () => {
             background: #f3f4f6;
             border-bottom: 2px solid #1e3a8a;
           }
+          tbody tr {
+            background: #fef3c7;
+          }
+          tbody tr:nth-child(even) {
+            background: #fde68a;
+          }
           .receipt-summary {
             border-top: 2px solid #1e3a8a;
             padding-top: 15px;
@@ -310,6 +320,10 @@ const POSBillingSystem = () => {
             justify-content: space-between;
             padding: 6px 0;
             font-size: 13px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          .summary-line:last-child {
+            border-bottom: none;
           }
           .summary-line.total {
             font-size: 17px;
@@ -361,48 +375,58 @@ const POSBillingSystem = () => {
           }
         </style>
       </head>
-      <body>${billRef.current.innerHTML}</body>
+      <body>
+        <div class="receipt-header">
+          <img src="${logoSrc}" alt="Company Logo" class="company-logo" />
+          <h2>Ibrahim Autos & Wholesale</h2>
+          <p>Phone: 0307-8694372</p>
+        </div>
+        ${billRef.current.querySelector('.receipt-info').outerHTML}
+        ${billRef.current.querySelector('.receipt-table').outerHTML}
+        ${billRef.current.querySelector('.receipt-summary').outerHTML}
+        ${billRef.current.querySelector('.receipt-footer').outerHTML}
+      </body>
       </html>
     `);
     printWindow.document.close();
     printWindow.print();
   };
 
- const handleDownload = async () => {
-  if (!billRef.current) return;
+  const handleDownload = async () => {
+    if (!billRef.current) return;
 
-  const element = billRef.current;
+    const element = billRef.current;
 
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true
-  });
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true
+    });
 
-  const imgData = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/png");
 
-  const pdf = new jsPDF("p", "mm", "a4");
+    const pdf = new jsPDF("p", "mm", "a4");
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // Resize image to fit the page while keeping aspect ratio
-  let imgWidth = pageWidth - 20; // margin 10 on each side
-  let imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // Resize image to fit the page while keeping aspect ratio
+    let imgWidth = pageWidth - 20; // margin 10 on each side
+    let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  // If still too tall, scale it further
-  if (imgHeight > pageHeight - 20) {
-    const scaleFactor = (pageHeight - 20) / imgHeight;
-    imgWidth *= scaleFactor;
-    imgHeight *= scaleFactor;
-  }
+    // If still too tall, scale it further
+    if (imgHeight > pageHeight - 20) {
+      const scaleFactor = (pageHeight - 20) / imgHeight;
+      imgWidth *= scaleFactor;
+      imgHeight *= scaleFactor;
+    }
 
-  // Center horizontally
-  const xPosition = (pageWidth - imgWidth) / 2;
-  const yPosition = 10;
+    // Center horizontally
+    const xPosition = (pageWidth - imgWidth) / 2;
+    const yPosition = 10;
 
-  pdf.addImage(imgData, "PNG", xPosition, yPosition, imgWidth, imgHeight);
-  pdf.save(`Bill-${billData?.billNo}.pdf`);
-};
+    pdf.addImage(imgData, "PNG", xPosition, yPosition, imgWidth, imgHeight);
+    pdf.save(`Bill-${billData?.billNo}.pdf`);
+  };
 
 
 
@@ -710,7 +734,8 @@ const POSBillingSystem = () => {
 
             <div ref={billRef} className="bill-receipt" >
               <div className="receipt-header">
-                <img src={logoo} alt="Company Logo" className="company-logo" />
+                <img src="/logoo.jpg" alt="Company Logo" className="company-logo" />
+
                 <h2>Ibrahim Autos & Wholesale</h2>
                 <p>Phone: 0307-8694372</p>
               </div>
