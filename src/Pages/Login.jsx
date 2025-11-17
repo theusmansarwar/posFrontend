@@ -182,7 +182,7 @@ const Login = ({ onLoginSuccess }) => {
             {loading ? (
               <CircularProgress size={24} sx={{ color: "white" }} />
             ) : (
-              "Submit"
+              "Login"
             )}
           </Button>
         </Box>

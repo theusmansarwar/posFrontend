@@ -38,10 +38,10 @@ const App = ({ onLogout }) => {
     { id: 2, name: "Roles", route: "/rolesData", icon: <FaUserShield />, module: "Roles" },
     { id: 3, name: "Users", route: "/usersData", icon: <FaUsers />, module: "Users" },
     { id: 4, name: "Stock Management", route: "/stockData", icon: <FaWarehouse />, module: "Stock Management" },
-    { id: 7, name: "Expense", route: "/ExpenseData", icon: <FaReceipt />, module: "Expense" },
-    { id: 5, name: "Billing", route: "/billData", icon: <FaMoneyBillWave />, module: "Billing" },
-    { id: 6, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" },
-    { id: 7, name: "Bill History", route: "/bill-history", icon: <FaReceipt />  , module: "Bill History" }
+    { id: 5, name: "Expense", route: "/ExpenseData", icon: <FaReceipt />, module: "Expense" },
+    { id: 6, name: "Billing", route: "/billData", icon: <FaMoneyBillWave />, module: "Billing" },
+    { id: 7, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" },
+    { id: 8, name: "Bill History", route: "/bill-history", icon: <FaReceipt />  , module: "Bill History" }
   ];
 
   // ✅ Get user modules from localStorage on component mount
@@ -233,7 +233,10 @@ const App = ({ onLogout }) => {
             path="/ExpenseData"
             element={hasAccess("/ExpenseData") ? <ExpenseM /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          <Route path="/bill-history" element={<BillHistory />} />
+          <Route
+            path="/bill-history"
+            element={hasAccess("/bill-history") ? <BillHistory /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
+          />
 
           {/* ✅ Default redirect to first available module */}
           <Route

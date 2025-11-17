@@ -2,7 +2,6 @@ import React from "react";
 import { useTable } from "../../Components/Models/useTable";
 
 const ExpenseM = () => {
-   
   const attributes = [
     { id: "ExpenseId", label: "Expense Id" },
     { id: "name", label: "Expense Name" },

@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Typography,
-  Modal,
-  TextField,
-} from "@mui/material";
+import { Box, Button, Typography, Modal, TextField } from "@mui/material";
 import { createStockM } from "../../DAL/create";
 import { updateStock } from "../../DAL/edit";
 
@@ -118,7 +112,6 @@ export default function AddStock({
     }
   };
 
-
   // Submit form with validation
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -129,32 +122,37 @@ export default function AddStock({
     const newErrors = {};
 
     // Validate required fields
-    if (!productName?.trim())
-      newErrors.productName = "Product name is required";
-    if (!quantity || quantity <= 0)
-      newErrors.quantity = "Quantity must be greater than 0";
-    if (!unitPrice || unitPrice <= 0)
-      newErrors.unitPrice = "Unit price must be greater than 0";
-    if (!salePrice || salePrice <= 0)
-      newErrors.salePrice = "Sale price must be greater than 0";
-    if (!totalPrice || totalPrice <= 0)
-      newErrors.totalPrice = "Total price must be greater than 0";
+    // if (!productName?.trim())
+    //   newErrors.productName = "Product name is required";
+    // if (!quantity || quantity <= 0)
+    //   newErrors.quantity = "Quantity must be greater than 0";
+    // if (!unitPrice || unitPrice <= 0)
+    //   newErrors.unitPrice = "Unit price must be greater than 0";
+    // if (!salePrice || salePrice <= 0)
+    //   newErrors.salePrice = "Sale price must be greater than 0";
+    // if (!totalPrice || totalPrice <= 0)
+    //   newErrors.totalPrice = "Total price must be greater than 0";
 
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    // if (Object.keys(newErrors).length > 0) {
+    //   setErrors(newErrors);
+    //   return;
+    // }
 
     const stockData = {
       productName,
-      supplier,
-      rackNo,
+      supplier: supplier?.trim() ? supplier : "NILL",
+      rackNo: rackNo?.trim() ? rackNo : "0",
       quantity: Number(quantity),
       unitPrice: Number(unitPrice),
       salePrice: Number(salePrice),
       totalPrice: Number(totalPrice),
       purchaseDate,
-      warranty,
+      warranty:
+        warranty === null ||
+        warranty === undefined ||
+        (typeof warranty === "string" && warranty.trim() === "")
+          ? "00"
+          : warranty,
     };
 
     try {
@@ -166,13 +164,14 @@ export default function AddStock({
       }
 
       if (response?.status === 201 || response?.status === 200) {
-        const successMessage = Modeltype === "Add"
-          ? "Stock added successfully"
-          : "Stock updated successfully";
+        const successMessage =
+          Modeltype === "Add"
+            ? "Stock added successfully"
+            : "Stock updated successfully";
 
         onResponse({
           messageType: "success",
-          message: response.message || successMessage
+          message: response.message || successMessage,
         });
 
         // Reset form only on Add
@@ -190,7 +189,7 @@ export default function AddStock({
 
         setErrors({});
         setOpen(false);
-      } else if (response?.status === 400 && response?.missingFields) {
+      } else if (response?.status == 400 && response?.missingFields) {
         const fieldErrors = {};
         response.missingFields.forEach((f) => {
           fieldErrors[f.name] = f.message;
@@ -199,7 +198,7 @@ export default function AddStock({
       } else {
         onResponse({
           messageType: "error",
-          message: response?.message || "Operation failed"
+          message: response?.message || "Operation failed",
         });
       }
     } catch (err) {
@@ -238,8 +237,6 @@ export default function AddStock({
             helperText={errors.supplier}
           />
         </Box>
-
-
 
         {/* Purchase Date + Warranty */}
         <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
@@ -318,7 +315,9 @@ export default function AddStock({
         </Box>
 
         {/* Buttons */}
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 3 }}>
+        <Box
+          sx={{ display: "flex", gap: 2, justifyContent: "flex-end", mt: 3 }}
+        >
           <Button
             type="button"
             variant="contained"

@@ -12,7 +12,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormHelperText
+  FormHelperText,
 } from "@mui/material";
 import { createRole } from "../../DAL/create";
 import { updateRole } from "../../DAL/edit";
@@ -37,26 +37,34 @@ export default function AddRoles({
   onResponse,
 }) {
   const [name, setName] = React.useState(Modeldata?.name || "");
-  const [description, setDescription] = React.useState(Modeldata?.description || "");
+  const [description, setDescription] = React.useState(
+    Modeldata?.description || ""
+  );
   const [modules, setModules] = React.useState(Modeldata?.Modules || []);
- const [status, setStatus] = React.useState(
-  typeof Modeldata?.status === "boolean" ? Modeldata.status : true
-);
+  const [status, setStatus] = React.useState(
+    typeof Modeldata?.status === "boolean" ? Modeldata.status : true
+  );
 
- const [errors, setErrors] = React.useState({});
-
+  const [errors, setErrors] = React.useState({});
 
   const [id, setId] = React.useState(Modeldata?._id || "");
 
-  const allModules = ["Dashboard","Users","Roles","Stock Management","Expense","Billing", "Returns"];
+  const allModules = [
+    "Dashboard",
+    "Users",
+    "Roles",
+    "Stock Management",
+    "Expense",
+    "Billing",
+    "Returns",
+    "Bill History",
+  ];
 
   React.useEffect(() => {
     setName(Modeldata?.name || "");
     setDescription(Modeldata?.description || "");
     setModules(Modeldata?.Modules || []);
-     setStatus(
-    typeof Modeldata?.status === "boolean" ? Modeldata.status : true
-  );
+    setStatus(typeof Modeldata?.status === "boolean" ? Modeldata.status : true);
     setId(Modeldata?._id || "");
   }, [Modeldata]);
 
@@ -64,7 +72,9 @@ export default function AddRoles({
 
   const handleModuleChange = (module) => {
     setModules((prev) =>
-      prev.includes(module) ? prev.filter((m) => m !== module) : [...prev, module]
+      prev.includes(module)
+        ? prev.filter((m) => m !== module)
+        : [...prev, module]
     );
   };
 
@@ -77,38 +87,36 @@ export default function AddRoles({
       modules,
       status,
     };
-try{
-    // ✅ Console log
-    console.log("🔹 Role Form Data:", roleData);
+    try {
+      // ✅ Console log
+      console.log("🔹 Role Form Data:", roleData);
 
-    let response;
-    if (Modeltype === "Add") {
-      // console.log("📌 Adding new role...");
-      response = await createRole(roleData);
-    } else {
-      console.log("📌 Updating role with ID:", id);
-      response = await updateRole(id, roleData);
-    }
+      let response;
+      if (Modeltype === "Add") {
+        // console.log("📌 Adding new role...");
+        response = await createRole(roleData);
+      } else {
+        console.log("📌 Updating role with ID:", id);
+        response = await updateRole(id, roleData);
+      }
 
-    // ✅ Alert show karna
-    // alert(`${Modeltype} Role Successfully!\n\nDetails:\n${JSON.stringify(roleData, null, 2)}`);
+      // ✅ Alert show karna
+      // alert(`${Modeltype} Role Successfully!\n\nDetails:\n${JSON.stringify(roleData, null, 2)}`);
 
-   if (response?.status === 201 || response?.status === 200) {
-  onResponse({ messageType: "success", message: response.message });
+      if (response?.status === 201 || response?.status === 200) {
+        onResponse({ messageType: "success", message: response.message });
 
-  // ✅ Clear all form fields
-  setName("");
-  setDescription("");
-  setModules([]);
-  setStatus(true);
-  setId("");
-  setErrors({});
+        // ✅ Clear all form fields
+        setName("");
+        setDescription("");
+        setModules([]);
+        setStatus(true);
+        setId("");
+        setErrors({});
 
-  // ✅ Close modal
-  setOpen(false);
-}
-
-       else if (response?.status === 400 && response?.missingFields) {
+        // ✅ Close modal
+        setOpen(false);
+      } else if (response?.status === 400 && response?.missingFields) {
         //  API validation errors
         const fieldErrors = {};
         response.missingFields.forEach((f) => {
@@ -117,7 +125,8 @@ try{
         setErrors(fieldErrors);
       } else {
         onResponse({ messageType: "error", message: response?.message });
-      }} catch (err) {
+      }
+    } catch (err) {
       console.error("❌ Error:", err);
       onResponse({
         messageType: "error",
@@ -140,7 +149,6 @@ try{
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             <TextField
               fullWidth
-        
               label="Role Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -192,17 +200,21 @@ try{
                 <MenuItem value="false">Inactive</MenuItem>
               </Select>
             </FormControl>
-             {errors.modules && (
-            <FormHelperText sx={{ color: "red" }}>
-              {errors.modules}
-            </FormHelperText>
-          )}
+            {errors.modules && (
+              <FormHelperText sx={{ color: "red" }}>
+                {errors.modules}
+              </FormHelperText>
+            )}
           </Box>
 
           {/* Buttons */}
           <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
-            <Button variant="outlined" onClick={handleClose} sx={{textTransform: "none",}}>
-              Cancel  
+            <Button
+              variant="outlined"
+              onClick={handleClose}
+              sx={{ textTransform: "none" }}
+            >
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -213,9 +225,8 @@ try{
                 "&:hover": { background: "var(--vertical-gradient)" },
                 textTransform: "none",
               }}
-              
             >
-              Add Role
+             {id ? "Update Role" : "Add Role"}
             </Button>
           </Box>
         </form>
