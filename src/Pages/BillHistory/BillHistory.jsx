@@ -8,6 +8,7 @@ const attributes = [
   { id: "createdAt", label: "Bill Generated At" },
   { id: "totalAmount", label: "Total Amount" },
   { id: "userPaidAmount", label: "Paid Amount" },
+  { id: "remainingAmount", label: "Remaining Amount" },
   { id: "paymentMode", label: "Payment Mode" },
   { id: "staff.name", label: "Cashier" },
 ];

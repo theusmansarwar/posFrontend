@@ -17,7 +17,6 @@ import jsPDF from "jspdf";
 
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
-  const [searchResult, setSearchResult] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const [discountType, setDiscountType] = useState("amount");
   const [discountValue, setDiscountValue] = useState(0);
@@ -37,51 +36,46 @@ const POSBillingSystem = () => {
     if (loggedInUser) {
       try {
         const userData = JSON.parse(loggedInUser);
-        // Set staff ID from user data (adjust the property name based on your user object structure)
-        if (userData._id) {
-          setStaffId(userData._id);
-        } else if (userData.id) {
-          setStaffId(userData.id);
-        } else if (userData.username) {
-          setStaffId(userData.username);
-        }
+        if (userData._id) setStaffId(userData._id);
+        else if (userData.id) setStaffId(userData.id);
+        else if (userData.username) setStaffId(userData.username);
       } catch (error) {
         console.error("Error parsing user data:", error);
       }
     }
 
-    // Fetch initial products
-    const fetchInitialProducts = async () => {
+    const fetchProducts = async (keyword = "") => {
       try {
         const res = await axios.get(
-          "https://pos.ztesting.site/backend/stock/list?page=1&limit=50"
+          `https://pos.ztesting.site/backend/stock/list?page=1&limit=50&keyword=${keyword}`
         );
         setProducts(res.data?.data || res.data);
       } catch (err) {
         console.error("Error fetching products:", err);
       }
     };
-    fetchInitialProducts();
+
+    fetchProducts();
   }, []);
 
-  const handleSearch = async () => {
-    try {
-      const res = await axios.get(
-        `https://pos.ztesting.site/backend/stock/list?page=1&limit=10&keyword=${searchId}`
-      );
-      const apiProducts = res.data?.data || res.data;
+  // Update products table on search
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      const fetchProducts = async () => {
+        try {
+          const res = await axios.get(
+            `https://pos.ztesting.site/backend/stock/list?page=1&limit=50&keyword=${searchId}`
+          );
+          setProducts(res.data?.data || res.data);
+        } catch (err) {
+          console.error("Error fetching products:", err);
+        }
+      };
+      fetchProducts();
+    }, 300);
 
-      if (apiProducts.length > 0) {
-        setSearchResult(apiProducts[0]);
-      } else {
-        setSearchResult(null);
-        alert("No products found!");
-      }
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      alert("Error fetching products");
-    }
-  };
+    return () => clearTimeout(delayDebounce);
+  }, [searchId]);
 
   const handleAddToCart = (product) => {
     const existingItem = cartItems.find((item) => item._id === product._id);
@@ -90,8 +84,6 @@ const POSBillingSystem = () => {
     } else {
       setCartItems([...cartItems, { ...product, quantity: 1 }]);
     }
-    setSearchId("");
-    setSearchResult(null);
   };
 
   const updateQuantity = (_id, newQuantity) => {
@@ -119,9 +111,7 @@ const POSBillingSystem = () => {
 
   const calculateDiscount = () => {
     const subtotal = calculateSubtotal();
-    if (discountType === "percentage") {
-      return (subtotal * discountValue) / 100;
-    }
+    if (discountType === "percentage") return (subtotal * discountValue) / 100;
     return discountValue;
   };
 
@@ -135,7 +125,13 @@ const POSBillingSystem = () => {
   const calculateChange = () => {
     const total = calculateTotal();
     const paid = parseFloat(customerPay) || 0;
-    return paid - total;
+    return paid > total ? paid - total : 0;
+  };
+
+  const calculateRemaining = () => {
+    const total = calculateTotal();
+    const paid = parseFloat(customerPay) || 0;
+    return total > paid ? total - paid : 0;
   };
 
   const handleGenerateBill = async () => {
@@ -154,21 +150,21 @@ const POSBillingSystem = () => {
       return;
     }
 
-    // Prepare payload for API
     const payload = {
       items: cartItems.map((item) => ({
         productId: item._id,
         quantity: parseInt(item.quantity),
       })),
       discount: parseFloat(calculateDiscount().toFixed(2)),
-      laborCost: parseFloat(laborCost) || 0,
+      labourCost: parseFloat(laborCost) || 0,
       paymentMode: paymentMode,
+      totalAmount: parseFloat(calculateTotal().toFixed(2)),
       userPaidAmount: parseFloat(customerPay),
+      remainingAmount: parseFloat(calculateRemaining().toFixed(2)),
+      change: parseFloat(calculateChange().toFixed(2)),
       staff: staffId,
       shift: shift,
     };
-
-    console.log("Sending API Payload:", JSON.stringify(payload, null, 2));
 
     try {
       const response = await axios.post(
@@ -180,8 +176,6 @@ const POSBillingSystem = () => {
           },
         }
       );
-
-      console.log("API Response:", response.data);
 
       const bill = {
         billNo:
@@ -196,10 +190,11 @@ const POSBillingSystem = () => {
         discountType: discountType,
         discountValue: discountValue,
         discount: calculateDiscount(),
-        laborCost: parseFloat(laborCost) || 0,
+        labourCost: parseFloat(laborCost) || 0,
         total: calculateTotal(),
         customerPaid: parseFloat(customerPay) || 0,
         change: calculateChange(),
+        remainingAmount: calculateRemaining(),
         cashierName: response.data?.data?.staff?.name || "Admin",
         shift: shift,
         paymentMode: paymentMode,
@@ -214,27 +209,19 @@ const POSBillingSystem = () => {
       setCustomerPay("");
     } catch (error) {
       console.error("Error creating bill:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
-
-      const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Unknown error occurred";
-
       alert(
-        `Error creating bill: ${errorMessage}\n\nPlease check the console for details.`
+        `Error creating bill: ${
+          error.response?.data?.message || error.message || "Unknown error"
+        }`
       );
     }
   };
 
-
-const handlePrint = () => {
+  const handlePrint = () => {
     // Get the actual logo element from the current document
-    const logoElement = billRef.current?.querySelector('.company-logo');
+    const logoElement = billRef.current?.querySelector(".company-logo");
     const logoSrc = logoElement?.src || logoo;
-    
+
     const printWindow = window.open("", "", "width=800,height=600");
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -381,10 +368,10 @@ const handlePrint = () => {
           <h2>Ibrahim Autos & Wholesale</h2>
           <p>Phone: 0307-8694372</p>
         </div>
-        ${billRef.current.querySelector('.receipt-info').outerHTML}
-        ${billRef.current.querySelector('.receipt-table').outerHTML}
-        ${billRef.current.querySelector('.receipt-summary').outerHTML}
-        ${billRef.current.querySelector('.receipt-footer').outerHTML}
+        ${billRef.current.querySelector(".receipt-info").outerHTML}
+        ${billRef.current.querySelector(".receipt-table").outerHTML}
+        ${billRef.current.querySelector(".receipt-summary").outerHTML}
+        ${billRef.current.querySelector(".receipt-footer").outerHTML}
       </body>
       </html>
     `);
@@ -399,7 +386,7 @@ const handlePrint = () => {
 
     const canvas = await html2canvas(element, {
       scale: 2,
-      useCORS: true
+      useCORS: true,
     });
 
     const imgData = canvas.toDataURL("image/png");
@@ -428,45 +415,22 @@ const handlePrint = () => {
     pdf.save(`Bill-${billData?.billNo}.pdf`);
   };
 
-
-
   return (
     <div className="pos-container">
       <div className="pos-left-section">
         <h2 className="section-title">Available Products</h2>
-
         <div className="search-section">
-          <input
-            type="text"
-            placeholder="Search Product ID or Name"
-            value={searchId}
-            onChange={(e) => setSearchId(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            className="search-input"
-          />
-          <button onClick={handleSearch} className="btn-search">
-            <Search size={20} /> Search
-          </button>
-        </div>
-
-        {searchResult && (
-          <div className="search-result">
-            <div className="result-details">
-              <span className="result-id">{searchResult.productId}</span>
-              <span className="result-name">{searchResult.productName}</span>
-              <span className="result-price">
-                Rs. {searchResult.unitPrice?.toFixed(2) || "0.00"}
-              </span>
-            </div>
-            <button
-              onClick={() => handleAddToCart(searchResult)}
-              className="btn-add"
-            >
-              Add to Cart
-            </button>
+          <div className="search-wrapper">
+            <input
+              type="text"
+              placeholder="Search Product ID or Name"
+              value={searchId}
+              onChange={(e) => setSearchId(e.target.value)}
+              className="search-input"
+            />
+            <Search size={20} className="search-icon" />
           </div>
-        )}
-
+        </div>
         <div className="products-table-container">
           <table className="products-table">
             <thead>
@@ -481,13 +445,13 @@ const handlePrint = () => {
             <tbody>
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="empty-products">
+                  <td colSpan="5" className="empty-products">
                     No products available
                   </td>
                 </tr>
               ) : (
                 products.map((product) => (
-                  <tr key={product.id}>
+                  <tr key={product._id}>
                     <td>{product.productId}</td>
                     <td>{product.productName}</td>
                     <td>Rs. {product.unitPrice?.toFixed(2) || "0.00"}</td>
@@ -505,18 +469,8 @@ const handlePrint = () => {
               )}
             </tbody>
           </table>
-        </div>
+        </div>{" "}
         <div className="cashier-section">
-          {/* <div className="cashier-input-group">
-            <label>Staff ID:</label>
-            <input
-              type="text"
-              placeholder="Enter staff ID"
-              value={staffId}
-              onChange={(e) => setStaffId(e.target.value)}
-              className="cashier-input"
-            />
-          </div> */}
           <div className="cashier-input-group">
             <label>Shift:</label>
             <select
@@ -530,7 +484,6 @@ const handlePrint = () => {
             </select>
           </div>
         </div>
-
         <div className="cart-section">
           <table className="cart-table">
             <thead>
@@ -695,8 +648,7 @@ const handlePrint = () => {
             >
               <option value="cash">Cash</option>
               <option value="card">Card</option>
-              <option value="upi">UPI</option>
-              <option value="wallet">Wallet</option>
+              <option value="online">Online</option>
             </select>
           </div>
 
@@ -713,6 +665,11 @@ const handlePrint = () => {
           <div className="summary-row">
             <span>Change:</span>
             <span>Rs. {calculateChange().toFixed(2)}</span>
+          </div>
+
+          <div className="summary-row">
+            <span>Remaining Amount:</span>
+            <span>Rs. {calculateRemaining().toFixed(2)}</span>
           </div>
         </div>
 
@@ -732,9 +689,13 @@ const handlePrint = () => {
               <X size={20} />
             </button>
 
-            <div ref={billRef} className="bill-receipt" >
+            <div ref={billRef} className="bill-receipt">
               <div className="receipt-header">
-                <img src="/logoo.jpg" alt="Company Logo" className="company-logo" />
+                <img
+                  src="/logoo.jpg"
+                  alt="Company Logo"
+                  className="company-logo"
+                />
 
                 <h2>Ibrahim Autos & Wholesale</h2>
                 <p>Phone: 0307-8694372</p>
@@ -826,6 +787,11 @@ const handlePrint = () => {
                 <div className="summary-line">
                   <span>Change:</span>
                   <span>Rs. {billData.change.toFixed(2)}</span>
+                </div>
+
+                <div className="summary-line">
+                  <span>Remaining Amount:</span>
+                  <span>Rs. {billData.remainingAmount.toFixed(2)}</span>
                 </div>
               </div>
 

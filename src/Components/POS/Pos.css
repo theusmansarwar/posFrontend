@@ -6,7 +6,7 @@
   padding: 20px;
   background: var(--white-color);
   min-height: 100vh;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* Left Side - Products Section */
@@ -35,9 +35,15 @@
   margin-bottom: 20px;
 }
 
+/* Wrapper to position icon inside input */
+.search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .search-input {
-  flex: 1;
-  padding: 10px 14px;
+  width: 95%;
+  padding: 10px; /* leave space for icon on the right */
   border: 1px solid #d1d5db;
   border-radius: 3px;
   font-size: 14px;
@@ -48,6 +54,16 @@
   outline: none;
   border-color: #1e3a8a;
   box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
+}
+
+/* Icon inside input */
+.search-icon {
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  color: #1e3a8a;
+  transition: color 0.2s;
 }
 
 .btn-search {
@@ -129,7 +145,7 @@
 
 /* Products Table */
 .products-table-container {
-  max-height: 250px;
+  max-height: 280px;
   overflow-y: scroll;
   border: 1px solid #e5e7eb;
   border-radius: 3px;

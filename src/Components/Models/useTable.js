@@ -443,11 +443,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                         whiteSpace: "nowrap",
                       },
 
-                      //  Custom widths for columns 3, 8, 9, and 12
-                      "& th:nth-of-type(3), & td:nth-of-type(3), \
-                      & th:nth-of-type(8), & td:nth-of-type(8), \
-                      & th:nth-of-type(9), & td:nth-of-type(9), \
-                      & th:nth-of-type(12), & td:nth-of-type(12)": {
+                      //  Custom widths for columns 3, 
+                     
+                      "& th:nth-of-type(3), & td:nth-of-type(3)": {
                         minWidth: "160px",
                       },
                     }}
