@@ -2,107 +2,142 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import image from "../Assets/IbrahimMotors.png";
 
-export const exportPDF = (title, data) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+export const exportDashboardPDF = (dashboardData) => {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
 
-    // --- Logo ---
-    const imgWidth = 40;
-    const imgHeight = 25;
-    const imgX = (pageWidth - imgWidth) / 2;
-    const imgY = 10;
-    doc.addImage(image, 'PNG', imgX, imgY, imgWidth, imgHeight);
+  // ---- Header (Logo + Company Info) ----
+  const imgWidth = 40;
+  const imgHeight = 25;
+  const imgX = (pageWidth - imgWidth) / 2;
+  doc.addImage(image, "PNG", imgX, 10, imgWidth, imgHeight);
 
-    // --- Company Info ---
-    const textStartY = imgY + imgHeight + 10;
-    doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("Ibrahim Autos & Wholesale", pageWidth / 2, 42, { align: "center" });
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text("Phone: 0307-8694372", pageWidth / 2, 48, { align: "center" });
+
+  const formattedDate = new Date().toLocaleString("en-GB", { hour12: false });
+  doc.text(`Date: ${formattedDate}`, pageWidth / 2, 54, { align: "center" });
+
+  let currentY = 65;
+
+  // Helper function to draw section title without dots
+  const drawSectionTitle = (text) => {
     doc.setFont("helvetica", "bold");
-    doc.text("Ibrahim Autos & Wholesale", pageWidth / 2, textStartY, { align: "center" });
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.text("Phone: 0307-8694372", pageWidth / 2, textStartY + 6, { align: "center" });
-
-    const currentDate = new Date();
-    const formattedDate = currentDate.toLocaleString("en-GB", { hour12: false });
-    doc.text(`Date: ${formattedDate}`, pageWidth / 2, textStartY + 12, { align: "center" });
-
-    // --- Section Title ---
-    const titleY = textStartY + 22;
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text(title, pageWidth / 2, titleY, { align: "center" });
+    doc.text(text, 14, currentY);
+    currentY += 6;
+  };
 
-    // --- Table ---
-    const tableY = titleY + 8;
+  // Helper: Insert data table
+  const insertTable = (title, rows) => {
+    drawSectionTitle(title);
+
     autoTable(doc, {
-        startY: tableY,
-        head: [['Metric', 'Value']],
-        body: data.map(item => [item.title, item.value]),
-        styles: { fontSize: 11, cellPadding: 3 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
+      startY: currentY,
+      head: [["Metric", "Value"]],
+      body: rows,
+      theme: "grid",
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      didDrawPage: (data) => {
+        currentY = data.cursor.y + 10;
+      },
     });
 
-    // --- Bar Chart Below Table ---
-    const chartStartY = doc.lastAutoTable.finalY + 15; // margin above chart
-    const chartHeight = 50;
-    const chartWidth = pageWidth - 40;
-    const barWidth = chartWidth / data.length - 10;
-    const chartLeftX = 20;
-    const maxValue = Math.max(...data.map(d => Number(d.value.toString().replace(/[^\d]/g, ''))));
+    currentY = doc.lastAutoTable.finalY + 12;
 
-    // --- Chart Title with margin bottom ---
-    const chartTitleSize = 14;
-    doc.setFontSize(chartTitleSize);
-    doc.setFont("helvetica", "bold");
-    const chartTitleY = chartStartY - 5;
-    doc.text("Summary Chart", pageWidth / 2, chartTitleY, { align: "center" });
-    const chartActualStartY = chartStartY + 8; // margin below chart title
-    const chartBottomY = chartActualStartY + chartHeight;
+    if (currentY > 250) {
+      doc.addPage();
+      currentY = 20;
+    }
+  };
 
-    // Draw axes
-    doc.setDrawColor(0);
-    doc.setLineWidth(0.5);
-    doc.line(chartLeftX, chartActualStartY, chartLeftX, chartBottomY); // left axis
-    doc.line(chartLeftX, chartBottomY, chartLeftX + chartWidth, chartBottomY); // bottom axis
+  // ---- Build Report Sections ----
+  insertTable("Products & Sales Overview", [
+    ["Total Products", dashboardData.products.totalProducts.quantity],
+    ["Total Products Value", dashboardData.products.totalProducts.price],
+    ["Total Sold Units", dashboardData.products.totalSold.quantity],
+    ["Total Sales Revenue", dashboardData.products.totalSold.sale],
+    ["Today Sales", dashboardData.products.today.quantity],
+    ["Yesterday Sales", dashboardData.products.yesterday.quantity],
+    ["This Week", dashboardData.products.thisWeek.quantity],
+    ["This Month", dashboardData.products.thisMonth.quantity],
+  ]);
 
-    // Draw bars
-    data.forEach((item, index) => {
-        const value = Number(item.value.toString().replace(/[^\d]/g, ''));
-        const barHeight = (value / maxValue) * chartHeight;
-        const x = chartLeftX + index * (barWidth + 10);
-        const y = chartBottomY - barHeight;
+  insertTable("Expense Overview", [
+    ["Today", dashboardData.expense.today],
+    ["Yesterday", dashboardData.expense.yesterday],
+    ["This Week", dashboardData.expense.thisWeek],
+    ["This Month", dashboardData.expense.thisMonth],
+    ["Total Expense", dashboardData.expense.totalExpense],
+  ]);
 
-        // Fill bar
-        doc.setFillColor(41, 128, 185);
-        doc.rect(x, y, barWidth, barHeight, 'F');
+  insertTable("Labour Cost Overview", [
+    ["Today", dashboardData.labourCost.today],
+    ["Yesterday", dashboardData.labourCost.yesterday],
+    ["This Week", dashboardData.labourCost.thisWeek],
+    ["This Month", dashboardData.labourCost.thisMonth],
+    ["Last Month", dashboardData.labourCost.lastMonth],
+    ["Total Labour Cost", dashboardData.labourCost.totalLabourCost],
+  ]);
 
-        // Value above bar
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`${item.value}`, x + barWidth / 2, y - 2, { align: "center" });
+  insertTable("Pending Amount Summary", [
+    ["Pending Amount", dashboardData.pendingAmount],
+  ]);
 
-        // Label below bar
-        // Label below bar with auto wrapping
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8);
-        doc.setTextColor(0, 0, 0);
+ // ---- BAR CHART AFTER PENDING AMOUNT ----
+currentY += 5; // some margin after Pending Amount table
 
-        // Correct wrap width based on bar width
-        const maxLabelWidth = barWidth;
-        const wrapped = doc.splitTextToSize(item.title, maxLabelWidth);
+// --- Chart Title ---
+doc.setFont("helvetica", "bold");
+doc.setFontSize(14);
+doc.text("Summary Chart", pageWidth / 2, currentY, { align: "center" });
 
-        // Calculate starting Y so wrapped text stays centered below bar
-        const textStartY = chartBottomY + 6;
+currentY += 8; // space below title
 
-        // Draw wrapped lines centered
-        wrapped.forEach((line, i) => {
-            doc.text(line, x + barWidth / 2, textStartY + (i * 4), { align: "center" });
-        });
+const chartData = [
+  { title: "Total Products", value: dashboardData.products.totalProducts.quantity },
+  { title: "Total Sold", value: dashboardData.products.totalSold.quantity },
+  { title: "Expenses", value: dashboardData.expense.totalExpense },
+  { title: "Labour Cost", value: dashboardData.labourCost.totalLabourCost },
+  { title: "Pending", value: dashboardData.pendingAmount },
+];
 
+const chartX = 20;
+const chartY = currentY;
+const chartWidth = pageWidth - 40;
+const chartHeight = 80;
+const barWidth = chartWidth / chartData.length - 10;
+const maxValue = Math.max(...chartData.map(d => d.value));
 
-    });
+// Draw chart borders (left and bottom)
+doc.setDrawColor(0);
+doc.setLineWidth(0.2);
+doc.line(chartX, chartY, chartX, chartY + chartHeight); // left border
+doc.line(chartX, chartY + chartHeight, chartX + chartWidth, chartY + chartHeight); // bottom border
 
-    // --- Save PDF ---
-    doc.save(`${title}.pdf`);
+// Draw bars
+chartData.forEach((item, index) => {
+  const barHeight = (item.value / maxValue) * chartHeight;
+  const x = chartX + index * (barWidth + 10);
+  const y = chartY + chartHeight - barHeight;
+
+  doc.setFillColor(41, 128, 185);
+  doc.rect(x, y, barWidth, barHeight, "F");
+
+  doc.setFontSize(9);
+  doc.text(String(item.value), x + barWidth / 2, y - 2, { align: "center" });
+
+  const label = doc.splitTextToSize(item.title, barWidth);
+  label.forEach((line, i) => {
+    doc.text(line, x + barWidth / 2, chartY + chartHeight + 6 + i * 4, { align: "center" });
+  });
+});
+  // ---- SAVE PDF ----
+  doc.save("Dashboard_Report.pdf");
 };

@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Download, TrendingUp, Package, DollarSign } from "lucide-react";
+import { Download, TrendingUp, Package } from "lucide-react";
+import { GiMoneyStack } from "react-icons/gi";
+import { GiTakeMyMoney } from "react-icons/gi";
+import { GrUserWorker } from "react-icons/gr";
 import "./Dashboard.css";
 import { fetchDashboard } from "../../DAL/fetch";
+import { exportDashboardPDF } from "../../Utils/ExportPdf";
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -17,7 +21,7 @@ const Dashboard = () => {
     const getDashboardData = async () => {
       try {
         setLoading(true);
-        const res = await fetchDashboard(); 
+        const res = await fetchDashboard();
 
         if (res) {
           setDashboardData(res);
@@ -56,10 +60,11 @@ const Dashboard = () => {
             <p className="dashboard-subtitle">Business performance overview.</p>
           </div>
 
-          <button className="export-button">
+          <button className="export-button" onClick={() => exportDashboardPDF(dashboardData)}>
             <Download size={18} />
             Export Report
           </button>
+
         </div>
 
         {/* Summary Cards */}
@@ -86,13 +91,13 @@ const Dashboard = () => {
               {dashboardData.products.totalSold.quantity}
             </div>
             <div className="card-subvalue">
-             Rs. {dashboardData.products.totalSold.sale}
+              {formatPKR(dashboardData.products.totalSold.sale)}
             </div>
           </div>
 
           <div className="dashboard-card card-amber">
             <div className="card-header">
-              <DollarSign size={24} />
+              <GiTakeMyMoney size={24} />
               <span>Pending Amount</span>
             </div>
             <div className="card-value">
@@ -108,6 +113,15 @@ const Dashboard = () => {
             </div>
             <div className="card-value">
               {formatPKR(dashboardData.expense.totalExpense)}
+            </div>
+          </div>
+          <div className="dashboard-card card-gray">
+            <div className="card-header">
+              <GrUserWorker size={24} />
+              <span>Total Labour Cost</span>
+            </div>
+            <div className="card-value">
+              {formatPKR(dashboardData.labourCost.totalLabourCost)}
             </div>
           </div>
         </div>
@@ -135,23 +149,48 @@ const Dashboard = () => {
                 <div key={item.label} className="metric-card">
                   <div className="metric-label">{item.label}</div>
                   <div className="metric-value">{item.data.quantity}</div>
-                  <div className="metric-subvalue">Rs. {item.data.sale}</div>
+                  <div className="metric-subvalue">{formatPKR(item.data.sale)}</div>
                 </div>
               ))}
             </div>
+            {/* /////////////////// Labour Cost Overview //////////////////// */}
+            <div className="section-header labour">
+              <Package size={24} />
+              <div>
+                <h2>Labour Cost Overview</h2>
+                <p>Track and monitor labour cost</p>
+              </div>
+            </div>
+
+            <div className="metrics-grid">
+              {[
+                { label: "Today", value: dashboardData.labourCost.today },
+                { label: "Yesterday", value: dashboardData.labourCost.yesterday },
+                { label: "This Week", value: dashboardData.labourCost.thisWeek },
+                { label: "This Month", value: dashboardData.labourCost.thisMonth },
+                { label: "Last Month", value: dashboardData.labourCost.lastMonth },
+              ].map((item) => (
+                <div key={item.label} className="metric-card">
+                  <div className="metric-label">{item.label}</div>
+                  <div className="metric-value">{formatPKR(item.value)}</div>
+                </div>
+              ))}
+            </div>
+
+
           </div>
 
           {/* Expenses */}
           <div className="section-expenses">
             <div className="section-header">
-              <DollarSign size={24} />
+              <GiMoneyStack size={24} />
               <div>
                 <h2>Expenses</h2>
                 <p>Expense tracking</p>
               </div>
             </div>
 
-            <div className="metrics-grid">
+            <div className="metrics-grid-expense">
               {[
                 { label: "Today", value: dashboardData.expense.today },
                 { label: "Yesterday", value: dashboardData.expense.yesterday },
