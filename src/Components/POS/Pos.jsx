@@ -7,6 +7,7 @@ import {
   Download,
   Search,
   X,
+  AlertCircle,
 } from "lucide-react";
 import { FaPhoneAlt } from "react-icons/fa";
 import logoo from "../../Assets/logoo.jpg";
@@ -14,7 +15,7 @@ import "./Pos.css";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { fetchProductsList } from "../../DAL/fetch";
-import {createBill} from "../../DAL/create";
+import { createBill } from "../../DAL/create";
 
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
@@ -31,10 +32,16 @@ const POSBillingSystem = () => {
   const [showBillPopup, setShowBillPopup] = useState(false);
   const [billData, setBillData] = useState(null);
   const [products, setProducts] = useState([]);
+
+  // State for Field-Level Errors
+  const [fieldErrors, setFieldErrors] = useState({});
+  
+  // State for Global Errors
+  const [globalError, setGlobalError] = useState("");
+
   const billRef = useRef();
 
   useEffect(() => {
-    // Get logged-in user from localStorage and auto-fill staff ID
     const loggedInUser = localStorage.getItem("userData");
     if (loggedInUser) {
       try {
@@ -46,12 +53,9 @@ const POSBillingSystem = () => {
         console.error("Error parsing user data:", error);
       }
     }
-
-    // Initial fetch of products
     loadProducts();
   }, []);
 
-  // Load products using API service
   const loadProducts = async (keyword = "") => {
     try {
       const response = await fetchProductsList(1, 50, keyword);
@@ -61,21 +65,23 @@ const POSBillingSystem = () => {
     }
   };
 
-  // Update products table on search
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       loadProducts(searchId);
     }, 300);
-
     return () => clearTimeout(delayDebounce);
   }, [searchId]);
 
   const handleAddToCart = (product) => {
+    setGlobalError(""); 
     const existingItem = cartItems.find((item) => item._id === product._id);
     if (existingItem) {
       updateQuantity(product._id, existingItem.quantity + 1);
     } else {
-      setCartItems([...cartItems, { ...product, quantity: 1, salePrice: 1.00 }]);
+      setCartItems([
+        ...cartItems,
+        { ...product, quantity: 1, salePrice: 1.0 },
+      ]);
     }
   };
 
@@ -136,101 +142,96 @@ const POSBillingSystem = () => {
     return total > paid ? total - paid : 0;
   };
 
+  const clearError = (field) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
   const handleGenerateBill = async () => {
+    setFieldErrors({});
+    setGlobalError("");
+
     if (cartItems.length === 0) {
-      alert("Please add items to cart!");
+      setGlobalError("Please add items to the cart first.");
       return;
     }
-
     if (!staffId.trim()) {
-      alert("Please enter staff ID!");
+      setGlobalError("Staff ID is missing. Please re-login.");
       return;
     }
-
-    if (!customerPay || parseFloat(customerPay) <= 0) {
-      alert("Please enter a valid payment amount!");
-      return;
-    }
-
-    // Check if remaining amount exists and customer details are required
     const remaining = calculateRemaining();
-    if (remaining > 0) {
-      if (!customerName.trim()) {
-        alert("Please enter customer name for remaining amount!");
-        return;
-      }
-      if (!customerPhone.trim()) {
-        alert("Please enter customer phone number for remaining amount!");
-        return;
-      }
-    }
 
     const payload = {
       items: cartItems.map((item) => ({
         productId: item._id,
         quantity: parseInt(item.quantity),
+        salePrice: parseFloat(item.salePrice),
+        total: parseFloat((item.salePrice * item.quantity).toFixed(2)),
       })),
       discount: parseFloat(calculateDiscount().toFixed(2)),
       labourCost: parseFloat(laborCost) || 0,
       paymentMode: paymentMode,
       totalAmount: parseFloat(calculateTotal().toFixed(2)),
-      userPaidAmount: parseFloat(customerPay),
+      userPaidAmount: parseFloat(customerPay) || 0,
       remainingAmount: parseFloat(remaining.toFixed(2)),
       change: parseFloat(calculateChange().toFixed(2)),
       staff: staffId,
       shift: shift,
-      ...(remaining > 0 && {
-        customerName: customerName,
-        customerPhone: customerPhone,
-      }),
+      customerName: customerName,
+      customerPhone: customerPhone,
     };
 
     try {
       const response = await createBill(payload);
-
       const bill = {
-        billNo:
-          response.billId ||
-          response.data?.billId ||
-          `BILL-${Date.now()}`,
-        date: response.createdAt
-          ? new Date(response.createdAt).toLocaleString()
-          : new Date().toLocaleString(),
+        billNo: response.billId || response.data?.billId || `BILL-${Date.now()}`,
+        date: response.createdAt ? new Date(response.createdAt).toLocaleString() : new Date().toLocaleString(),
         items: cartItems,
         subtotal: calculateSubtotal(),
-        discountType: discountType,
-        discountValue: discountValue,
-        discount: calculateDiscount(),
-        labourCost: parseFloat(laborCost) || 0,
+        discountType, discountValue, discount: calculateDiscount(),
+        laborCost: parseFloat(laborCost) || 0,
         total: calculateTotal(),
         customerPaid: parseFloat(customerPay) || 0,
         change: calculateChange(),
         remainingAmount: remaining,
         cashierName: response.data?.staff?.name || "Admin",
-        shift: shift,
-        paymentMode: paymentMode,
-        ...(remaining > 0 && {
-          customerName: customerName,
-          customerPhone: customerPhone,
-        }),
+        shift, paymentMode, customerName, customerPhone
       };
 
       setBillData(bill);
-      setShowBillPopup(true);
+      if(response.status === 200){
+        setShowBillPopup(true);
+      }
+      else{
+        setShowBillPopup(false);
+      }
 
-      setCartItems([]);
-      setDiscountValue(0);
-      setLaborCost(0);
-      setCustomerPay("");
-      setCustomerName("");
-      setCustomerPhone("");
+      setCartItems([]); setDiscountValue(0); setLaborCost(0);
+      setCustomerPay(""); setCustomerName(""); setCustomerPhone("");
+      
     } catch (error) {
       console.error("Error creating bill:", error);
-      alert(
-        `Error creating bill: ${
-          error.response?.data?.message || error.message || "Unknown error"
-        }`
-      );
+      
+      const backendErrors = {};
+      const backendMsg = error.response?.data?.error || error.response?.data?.message || error.message || "Unknown Error";
+
+      if (backendMsg.includes("customerName")) backendErrors.customerName = "Customer Name is required";
+      if (backendMsg.includes("customerPhone")) backendErrors.customerPhone = "Phone Number is required";
+
+      if (!customerName.trim()) {
+        backendErrors.customerName = "Customer Name is required";
+      }
+      if (!customerPhone.trim()) {
+        backendErrors.customerPhone = "Phone Number is required";
+      }
+
+      // Update State
+      if (Object.keys(backendErrors).length > 0) {
+        setFieldErrors(backendErrors);
+      } else {
+        setGlobalError(backendMsg); 
+      }
     }
   };
 
@@ -244,138 +245,33 @@ const POSBillingSystem = () => {
       <html>
       <head>
         <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            padding: 20px;
-            margin: 0;
-          }
-          .receipt { 
-            max-width: 400px; 
-            margin: 0 auto; 
-          }
-          .receipt-header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #1e3a8a;
-            padding-bottom: 15px;
-          }
-          .company-logo {
-            width: 70px;
-            height: 70px;
-            object-fit: contain;
-            margin-bottom: 10px;
-          }
-          .receipt-header h2 {
-            margin: 0 0 10px 0;
-            color: #1e3a8a;
-            font-size: 22px;
-          }
-          .receipt-header p {
-            margin: 4px 0;
-            font-size: 12px;
-          }
-          .receipt-info {
-            margin-bottom: 20px;
-            font-size: 12px;
-          }
-          .receipt-info p {
-            margin: 4px 0;
-          }
-          .Bill-date {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 8px;
-          }
-          .Cashier-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-          }
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 15px 0;
-            border: 1px solid #e5e7eb;
-          }
-          th, td { 
-            padding: 8px; 
-            text-align: left; 
-            border-bottom: 1px solid #ddd;
-            font-size: 12px;
-          }
-          th {
-            background: #f3f4f6;
-            border-bottom: 2px solid #1e3a8a;
-          }
-          tbody tr {
-            background: #fef3c7;
-          }
-          tbody tr:nth-child(even) {
-            background: #fde68a;
-          }
-          .receipt-summary {
-            border-top: 2px solid #1e3a8a;
-            padding-top: 15px;
-          }
-          .summary-line {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            font-size: 13px;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          .summary-line:last-child {
-            border-bottom: none;
-          }
-          .summary-line.total {
-            font-size: 17px;
-            font-weight: 700;
-            color: #1e3a8a;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 2px solid #e5e7eb;
-          }
-          .savings-highlight {
-            color: #059669;
-            font-weight: 600;
-            background: #d1fae5;
-            padding: 8px;
-            border-radius: 3px;
-            margin: 5px 0;
-          }
-          .labor-highlight {
-            color: #0369a1;
-            font-weight: 600;
-            background: #e0f2fe;
-            padding: 8px;
-            border-radius: 3px;
-            margin: 5px 0;
-          }
-          .receipt-footer {
-            text-align: center;
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 2px solid #1e3a8a;
-          }
-          .receipt-footer p {
-            margin: 4px 0;
-            font-size: 12px;
-          }
-          .watermark {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed #d1d5db;
-          }
-          .watermark p {
-            margin: 2px 0;
-            font-size: 11px;
-            color: #9ca3af;
-          }
-          .watermark strong {
-            color: #1e3a8a;
-            font-size: 12px;
-          }
+          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+          .receipt { max-width: 400px; margin: 0 auto; }
+          .receipt-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; }
+          .company-logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 10px; }
+          .receipt-header h2 { margin: 0 0 10px 0; color: #1e3a8a; font-size: 22px; }
+          .receipt-header p { margin: 4px 0; font-size: 12px; }
+          .receipt-info { margin-bottom: 20px; font-size: 12px; }
+          .receipt-info p { margin: 4px 0; }
+          .Bill-date { display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; }
+          .Cashier-info { display: flex; justify-content: space-between; margin-bottom: 8px; }
+          .customer-info-section { border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px; }
+          table { width: 100%; border-collapse: collapse; margin: 15px 0; border: 1px solid #e5e7eb; }
+          th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
+          th { background: #f3f4f6; border-bottom: 2px solid #1e3a8a; }
+          tbody tr { background: #fef3c7; }
+          tbody tr:nth-child(even) { background: #fde68a; }
+          .receipt-summary { border-top: 2px solid #1e3a8a; padding-top: 15px; }
+          .summary-line { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
+          .summary-line:last-child { border-bottom: none; }
+          .summary-line.total { font-size: 17px; font-weight: 700; color: #1e3a8a; margin-top: 10px; padding-top: 10px; border-top: 2px solid #e5e7eb; }
+          .savings-highlight { color: #059669; font-weight: 600; background: #d1fae5; padding: 8px; border-radius: 3px; margin: 5px 0; }
+          .labor-highlight { color: #0369a1; font-weight: 600; background: #e0f2fe; padding: 8px; border-radius: 3px; margin: 5px 0; }
+          .receipt-footer { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid #1e3a8a; }
+          .receipt-footer p { margin: 4px 0; font-size: 12px; }
+          .watermark { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d1d5db; }
+          .watermark p { margin: 2px 0; font-size: 11px; color: #9ca3af; }
+          .watermark strong { color: #1e3a8a; font-size: 12px; }
         </style>
       </head>
       <body>
@@ -397,33 +293,21 @@ const POSBillingSystem = () => {
 
   const handleDownload = async () => {
     if (!billRef.current) return;
-
     const element = billRef.current;
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-    });
-
+    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF("p", "mm", "a4");
-
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-
     let imgWidth = pageWidth - 20;
     let imgHeight = (canvas.height * imgWidth) / canvas.width;
-
     if (imgHeight > pageHeight - 20) {
       const scaleFactor = (pageHeight - 20) / imgHeight;
       imgWidth *= scaleFactor;
       imgHeight *= scaleFactor;
     }
-
     const xPosition = (pageWidth - imgWidth) / 2;
     const yPosition = 10;
-
     pdf.addImage(imgData, "PNG", xPosition, yPosition, imgWidth, imgHeight);
     pdf.save(`Bill-${billData?.billNo}.pdf`);
   };
@@ -546,7 +430,9 @@ const POSBillingSystem = () => {
                       <input
                         type="number"
                         value={item.salePrice}
-                        onChange={(e) => updateSalePrice(item._id, e.target.value)}
+                        onChange={(e) =>
+                          updateSalePrice(item._id, e.target.value)
+                        }
                         className="sale-price-input"
                         min="0"
                         step="0.01"
@@ -555,11 +441,13 @@ const POSBillingSystem = () => {
                           padding: "4px 8px",
                           border: "1px solid #d1d5db",
                           borderRadius: "4px",
-                          fontSize: "13px"
+                          fontSize: "13px",
                         }}
                       />
                     </td>
-                    <td>Rs. {(item.salePrice * item.quantity).toFixed(2)}</td>
+                    <td>
+                      Rs. {(item.salePrice * item.quantity).toFixed(2)}
+                    </td>
                     <td>
                       <button
                         onClick={() => removeItem(item._id)}
@@ -680,16 +568,55 @@ const POSBillingSystem = () => {
             </select>
           </div>
 
+          <div className="customer-details-section">
+            <div className="summary-row">
+              <span>Customer Name:<span style={{color:'red'}}>*</span></span>
+              <div className="input-group">
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => {
+                    setCustomerName(e.target.value);
+                    clearError("customerName");
+                  }}
+                  className={`discount-input ${fieldErrors.customerName ? "input-error" : ""}`}
+                  placeholder="Enter customer name"
+                />
+                {fieldErrors.customerName && <span className="error-text">{fieldErrors.customerName}</span>}
+              </div>
+            </div>
+
+            <div className="summary-row">
+              <span>Customer Phone:<span style={{color:'red'}}>*</span></span>
+              <div className="input-group">
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => {
+                    setCustomerPhone(e.target.value);
+                    clearError("customerPhone");
+                  }}
+                  className={`discount-input ${fieldErrors.customerPhone ? "input-error" : ""}`}
+                  placeholder="Enter phone number"
+                />
+                {fieldErrors.customerPhone && <span className="error-text">{fieldErrors.customerPhone}</span>}
+              </div>
+            </div>
+          </div>
+
           <div className="summary-row">
             <span>Customer Pay:</span>
-            <input
-              type="number"
-              value={customerPay}
-              onChange={(e) => setCustomerPay(e.target.value)}
-              className="discount-input"
-              placeholder="0.00"
-            />
+            <div className="input-group">
+              <input
+                type="number"
+                value={customerPay}
+                onChange={(e) => setCustomerPay(e.target.value)}
+                className="discount-input"
+                placeholder="0.00"
+              />
+            </div>
           </div>
+
           <div className="summary-row">
             <span>Change:</span>
             <span>Rs. {calculateChange().toFixed(2)}</span>
@@ -699,34 +626,28 @@ const POSBillingSystem = () => {
             <span>Remaining Amount:</span>
             <span>Rs. {calculateRemaining().toFixed(2)}</span>
           </div>
-
-          {calculateRemaining() > 0 && (
-            <div className="customer-details-section">
-              <div className="summary-row">
-                <span>Customer Name:</span>
-                <input
-                  type="text"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="discount-input"
-                  placeholder="Enter customer name"
-                  required
-                />
-              </div>
-              <div className="summary-row">
-                <span>Customer Phone:</span>
-                <input
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  className="discount-input"
-                  placeholder="Enter phone number"
-                  required
-                />
-              </div>
-            </div>
-          )}
         </div>
+
+        {globalError && (
+          <div 
+            style={{
+              backgroundColor: '#fee2e2',
+              border: '1px solid #ef4444',
+              color: '#b91c1c',
+              padding: '10px',
+              borderRadius: '6px',
+              marginBottom: '15px',
+              fontSize: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: '500'
+            }}
+          >
+            <AlertCircle size={20} />
+            <span>{globalError}</span>
+          </div>
+        )}
 
         <button onClick={handleGenerateBill} className="btn-generate">
           Generate Bill
@@ -750,44 +671,24 @@ const POSBillingSystem = () => {
                   alt="Company Logo"
                   className="company-logo"
                 />
-
                 <h2>Ibrahim Autos & Wholesale</h2>
                 <p>Phone: 0307-8694372</p>
               </div>
 
               <div className="receipt-info">
                 <div className="Bill-date">
-                  <p>
-                    <strong>Bill No:</strong> {billData.billNo}
-                  </p>
-                  <p>
-                    <strong>Date:</strong> {billData.date}
-                  </p>
+                  <p><strong>Bill No:</strong> {billData.billNo}</p>
+                  <p><strong>Date:</strong> {billData.date}</p>
                 </div>
                 <div className="Cashier-info">
-                  <p>
-                    <strong>Cashier:</strong> {billData.cashierName}
-                  </p>
-                  <p>
-                    <strong>Shift:</strong>{" "}
-                    {billData.shift.charAt(0).toUpperCase() +
-                      billData.shift.slice(1)}
-                  </p>
-                  <p>
-                    <strong>Payment:</strong>{" "}
-                    {billData.paymentMode.toUpperCase()}
-                  </p>
+                  <p><strong>Cashier:</strong> {billData.cashierName}</p>
+                  <p><strong>Shift:</strong> {billData.shift.charAt(0).toUpperCase() + billData.shift.slice(1)}</p>
+                  <p><strong>Payment:</strong> {billData.paymentMode.toUpperCase()}</p>
                 </div>
-                {billData.remainingAmount > 0 && (
-                  <div className="customer-info">
-                    <p>
-                      <strong>Customer:</strong> {billData.customerName}
-                    </p>
-                    <p>
-                      <strong>Phone:</strong> {billData.customerPhone}
-                    </p>
-                  </div>
-                )}
+                <div className="customer-info-section">
+                  <p><strong>Customer:</strong> {billData.customerName}</p>
+                  <p><strong>Phone:</strong> {billData.customerPhone}</p>
+                </div>
               </div>
 
               <table className="receipt-table">
@@ -819,13 +720,7 @@ const POSBillingSystem = () => {
                 {billData.discount > 0 && (
                   <>
                     <div className="summary-line">
-                      <span>
-                        Discount (
-                        {billData.discountType === "percentage"
-                          ? `${billData.discountValue}%`
-                          : `Rs. ${billData.discountValue}`}
-                        ):
-                      </span>
+                      <span>Discount ({billData.discountType === "percentage" ? `${billData.discountValue}%` : `Rs. ${billData.discountValue}`}):</span>
                       <span>-Rs. {billData.discount.toFixed(2)}</span>
                     </div>
                     <div className="summary-line savings-highlight">
@@ -852,7 +747,6 @@ const POSBillingSystem = () => {
                   <span>Change:</span>
                   <span>Rs. {billData.change.toFixed(2)}</span>
                 </div>
-
                 <div className="summary-line">
                   <span>Remaining Amount:</span>
                   <span>Rs. {billData.remainingAmount.toFixed(2)}</span>
@@ -864,9 +758,7 @@ const POSBillingSystem = () => {
                 <p>Visit again</p>
                 <div className="watermark">
                   <p>Software Powered by</p>
-                  <p>
-                    <strong>Zemalt PVT LTD</strong>
-                  </p>
+                  <p><strong>Zemalt PVT LTD</strong></p>
                   <p className="phone-contact">
                     <FaPhoneAlt className="phone-icon" />
                     <span>03285522005</span>

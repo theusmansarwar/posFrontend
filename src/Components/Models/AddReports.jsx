@@ -47,8 +47,8 @@ const reportFieldConfig = {
   Bills: [
     { key: 'billId', label: 'Bill No', paths: ['billId', 'billNo', 'invoiceNo'] },
     { key: 'date', label: 'Date', type: 'date', paths: ['date', 'createdAt', 'billDate'] },
-    { key: 'customerName', label: 'Customer Name', paths: ['customerName', 'customer.name'] },
-    { key: 'customerPhone', label: 'Customer Phone', paths: ['customerPhone', 'customer.phone'] },
+    { key: 'customerName', label: 'Customer Name', paths: ['customerName', 'customerName'] },
+    { key: 'customerPhone', label: 'Customer Phone', paths: ['customerPhone', 'customerPhone'] },
     { key: 'totalAmount', label: 'Total Amount', type: 'currency', paths: ['totalAmount', 'total'] },
     { key: 'discount', label: 'Discount', type: 'currency', paths: ['discount'] },
     { key: 'labourCost', label: 'Labour Cost', type: 'currency', paths: ['labourCost', 'laborCost'] },

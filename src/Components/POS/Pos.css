@@ -406,11 +406,14 @@
   border: 1px solid #e5e7eb;
 }
 
+/* UPDATED: Changed align-items to flex-start to handle validation error height changes */
 .summary-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start; 
   padding: 10px 0;
   font-size: 14px;
+  min-height: 40px; /* Ensure consistent height */
 }
 
 .summary-row.total-row {
@@ -487,18 +490,44 @@
 }
 
 .discount-input {
-  width: 120px;
+  width: 160px; /* Increased slightly to accommodate errors */
   padding: 6px 10px;
   border: 1px solid #d1d5db;
   border-radius: 3px;
   text-align: right;
   font-size: 14px;
+  transition: border-color 0.2s;
 }
 
 .discount-input:focus {
   outline: none;
   border-color: #1e3a8a;
 }
+
+/* NEW: Validation Styles */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end; /* Align input and error to the right */
+}
+
+.input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2;
+}
+
+.input-error:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1) !important;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 11px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+/* End Validation Styles */
 
 /* Generate Button */
 .btn-generate {
