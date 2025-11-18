@@ -1,27 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, Printer, Download, Search, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from "react";
+import { Trash2, Printer, Download, Search, X } from "lucide-react";
 import { FaPhoneAlt } from "react-icons/fa";
-import './Return.css';
-import logoo from '../../Assets/logoo.jpg';
+import "./Return.css";
+import logoo from "../../Assets/logoo.jpg";
 
 // Import API functions from DAL
-import { 
-  fetchallBilllist,  
-  searchBillById,     
-  
-} from '../../DAL/fetch';
+import { fetchallBilllist, searchBillById } from "../../DAL/fetch";
 
-import {updateBill} from '../../DAL/edit'
+import { updateBill } from "../../DAL/edit";
 
 const ReturnManagement = () => {
-  const [searchBillId, setSearchBillId] = useState('');
+  const [searchBillId, setSearchBillId] = useState("");
   const [recentBills, setRecentBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [returnItems, setReturnItems] = useState([]);
-  const [returnReason, setReturnReason] = useState('');
-  const [staffId, setStaffId] = useState('');
-  const [shift, setShift] = useState('morning');
-  const [refundMode, setRefundMode] = useState('cash');
+  const [returnReason, setReturnReason] = useState("");
+  const [staffId, setStaffId] = useState("");
+  const [shift, setShift] = useState("morning");
+  const [refundMode, setRefundMode] = useState("cash");
   const [showReturnReceipt, setShowReturnReceipt] = useState(false);
   const [returnReceiptData, setReturnReceiptData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -53,25 +49,29 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
       const response = await fetchallBilllist(1, 50, searchKeyword);
-      
-      const mappedBills = response.data ? response.data.map(bill => ({
-        _id: bill._id,
-        billNo: bill.billId,
-        date: new Date(bill.createdAt).toLocaleString(),
-        items: bill.items,
-        total: bill.totalAmount,
-        paymentMode: bill.paymentMode
-      })) : response.map(bill => ({
-        _id: bill._id,
-        billNo: bill.billId || bill.billNo,
-        date: bill.createdAt ? new Date(bill.createdAt).toLocaleString() : bill.date,
-        items: bill.items,
-        total: bill.totalAmount || bill.total,
-        paymentMode: bill.paymentMode
-      }));
+
+      const mappedBills = response.data
+        ? response.data.map((bill) => ({
+            _id: bill._id,
+            billNo: bill.billId,
+            date: new Date(bill.createdAt).toLocaleString(),
+            items: bill.items,
+            total: bill.totalAmount,
+            paymentMode: bill.paymentMode,
+          }))
+        : response.map((bill) => ({
+            _id: bill._id,
+            billNo: bill.billId || bill.billNo,
+            date: bill.createdAt
+              ? new Date(bill.createdAt).toLocaleString()
+              : bill.date,
+            items: bill.items,
+            total: bill.totalAmount || bill.total,
+            paymentMode: bill.paymentMode,
+          }));
       setRecentBills(mappedBills);
     } catch (error) {
-      console.error('Error fetching bills:', error);
+      console.error("Error fetching bills:", error);
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
       const result = await searchBillById(bill.billNo);
-      
+
       if (result && result.data) {
         const mappedBill = {
           _id: result.data._id,
@@ -113,21 +113,21 @@ const ReturnManagement = () => {
           total: result.data.totalAmount,
           paymentMode: result.data.paymentMode,
           discount: result.data.discount,
-          staffId: result.data.staff?.name || 'N/A',
-          shift: result.data.shift
+          staffId: result.data.staff?.name || "N/A",
+          shift: result.data.shift,
         };
         setSelectedBill(mappedBill);
-        
-        const itemsWithReturnQty = mappedBill.items.map(item => ({
+
+        const itemsWithReturnQty = mappedBill.items.map((item) => ({
           ...item,
           returnQuantity: item.quantity,
-          maxQuantity: item.quantity
+          maxQuantity: item.quantity,
         }));
         setReturnItems(itemsWithReturnQty);
       }
     } catch (error) {
-      console.error('Error fetching bill details:', error);
-      alert('Error loading bill details!');
+      console.error("Error fetching bill details:", error);
+      alert("Error loading bill details!");
     } finally {
       setLoading(false);
     }
@@ -138,91 +138,134 @@ const ReturnManagement = () => {
   };
 
   const updateReturnQuantity = (_id, newQuantity) => {
-    setReturnItems(returnItems.map(item => {
-      if (item._id === _id) {
-        const validQuantity = Math.min(Math.max(0, newQuantity), item.maxQuantity);
-        return { ...item, returnQuantity: validQuantity };
-      }
-      return item;
-    }));
+    setReturnItems(
+      returnItems.map((item) => {
+        if (item._id === _id) {
+          const validQuantity = Math.min(
+            Math.max(0, newQuantity),
+            item.maxQuantity
+          );
+          return { ...item, returnQuantity: validQuantity };
+        }
+        return item;
+      })
+    );
   };
 
   const handleDeleteItem = (_id) => {
-    setReturnItems(returnItems.filter(item => item._id !== _id));
+    setReturnItems(returnItems.filter((item) => item._id !== _id));
   };
 
   const calculateReturnTotal = () => {
-    return returnItems.reduce((sum, item) => sum + (item.salePrice * item.returnQuantity), 0);
+    return returnItems.reduce(
+      (sum, item) => sum + item.salePrice * item.returnQuantity,
+      0
+    );
   };
 
   const handleGenerateReturnReceipt = async () => {
-    const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
+    // 1. Validation: Check if user actually selected a return quantity
+    const hasReturnItems = returnItems.some((item) => item.returnQuantity > 0);
 
-    if (itemsToReturn.length === 0) {
-      alert('Please select items to return!');
+    if (!hasReturnItems) {
+      alert("Please select items to return!");
       return;
     }
 
     if (!staffId.trim()) {
-      alert('Please enter staff ID!');
+      alert("Please enter staff ID!");
       return;
     }
 
     if (!returnReason.trim()) {
-      alert('Please enter return reason!');
+      alert("Please enter return reason!");
       return;
     }
 
     try {
       setLoading(true);
 
-      const returnData = {
-        billId: selectedBill.billNo,
-        isDeleted: false,
-        items: itemsToReturn.map(item => ({
-          productId: item.productId?._id || item.productId,
-          productName: item.productName,
-          quantity: item.returnQuantity,
-          salePrice: item.salePrice,
-          total: item.salePrice * item.returnQuantity
-        })),
-        returnReason,
-        refundMode,
-        staffId,
-        shift
+      // ============================================================
+      // 🛑 FIX IS HERE: CALCULATE NEW BILL STATE
+      // ============================================================
+
+      // We map through ALL items (returnItems contains the full bill list)
+      const updatedBillItems = returnItems
+        .map((item) => {
+          // Formula: Original Qty - Return Qty = New Bill Qty
+          const remainingQty = item.maxQuantity - item.returnQuantity;
+
+          return {
+            // Ensure we keep the Product ID structure correct
+            productId: item.productId?._id || item.productId,
+            productName: item.productName,
+            productCode: item.productCode, // Keep the code
+
+            // ⚠️ CRITICAL: Send the REMAINING quantity, not the return quantity
+            quantity: remainingQty,
+
+            salePrice: item.salePrice,
+            // Recalculate the total for this line item
+            total: item.salePrice * remainingQty,
+          };
+        })
+        // Only keep items that still have quantity > 0.
+        // If remainingQty is 0 (customer returned everything), it removes the item from bill.
+        .filter((item) => item.quantity > 0);
+
+      // 2. Prepare Payload for Backend (The "New Bill State")
+      const billUpdatePayload = {
+        items: updatedBillItems, // This is the list of what the customer KEEPS
+        returnReason: returnReason,
+        staffId: staffId,
+        shift: shift,
+        // Recalculate main bill totals if your backend doesn't do it automatically
+        // usually backend handles totalAmount, but we ensure items are correct here
       };
 
-      const result = await updateBill(selectedBill.billNo, returnData); 
+      // 3. Call API
+      const result = await updateBill(selectedBill.billNo, billUpdatePayload);
 
       if (result) {
+        // ============================================================
+        // 🖨️ RECEIPT LOGIC (This remains distinct)
+        // ============================================================
+
+        // For the Receipt, we ONLY want to show what was Returned
+        const itemsOnlyReturned = returnItems.filter(
+          (item) => item.returnQuantity > 0
+        );
+
         const returnReceipt = {
           returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
           originalBillDate: selectedBill.date,
           returnDate: new Date().toLocaleString(),
-          items: itemsToReturn,
-          returnTotal: calculateReturnTotal(),
+          items: itemsOnlyReturned, // Receipt shows Returns
+          returnTotal: calculateReturnTotal(), // Money to give back
           refundMode,
           returnReason,
           staffId,
-          shift
+          shift,
         };
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
+
+        // Optional: Refresh the list to see updated quantities
+        // loadBills();
       } else {
-        alert('Failed to process return!');
+        alert("Failed to process return!");
       }
     } catch (error) {
-      console.error('Error processing return:', error);
-      alert(`Failed to process return: ${error.message || 'Unknown error'}`);
+      console.error("Error processing return:", error);
+      alert(`Failed to process return: ${error.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }
   };
-
   const handlePrint = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
+    const printWindow = window.open("", "", "width=800,height=600");
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -368,7 +411,9 @@ const ReturnManagement = () => {
 
   const handleDownload = () => {
     const receiptHTML = receiptRef.current.innerHTML;
-    const blob = new Blob([`
+    const blob = new Blob(
+      [
+        `
       <!DOCTYPE html>
       <html>
       <head>
@@ -382,10 +427,13 @@ const ReturnManagement = () => {
       </head>
       <body>${receiptHTML}</body>
       </html>
-    `], { type: 'text/html' });
+    `,
+      ],
+      { type: "text/html" }
+    );
 
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `return-${returnReceiptData?.returnNo}.html`;
     a.click();
@@ -395,9 +443,7 @@ const ReturnManagement = () => {
     <div className="return-container">
       {/* Left Side - Available Bills */}
       <div className="return-left-section">
-        <h2 className="section-title">
-          Return Management
-        </h2>
+        <h2 className="section-title">Return Management</h2>
 
         <div className="search-section">
           <input
@@ -405,11 +451,15 @@ const ReturnManagement = () => {
             placeholder="Search by Bill ID or Customer Name..."
             value={searchBillId}
             onChange={handleSearchInputChange}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearchBill()}
+            onKeyPress={(e) => e.key === "Enter" && handleSearchBill()}
             className="search-input"
           />
-          <button onClick={handleSearchBill} className="btn-search" disabled={loading}>
-            <Search size={20} /> {loading ? 'Searching...' : 'Search'}
+          <button
+            onClick={handleSearchBill}
+            className="btn-search"
+            disabled={loading}
+          >
+            <Search size={20} /> {loading ? "Searching..." : "Search"}
           </button>
         </div>
 
@@ -417,9 +467,16 @@ const ReturnManagement = () => {
           <div className="selected-bill-info">
             <h3 className="subsection-title">Selected Bill Items</h3>
             <div className="bill-details-box">
-              <p><strong>Bill No:</strong> {selectedBill.billNo}</p>
-              <p><strong>Date:</strong> {selectedBill.date}</p>
-              <p><strong>Original Total:</strong> Rs.{selectedBill.total?.toFixed(2) || '0.00'}</p>
+              <p>
+                <strong>Bill No:</strong> {selectedBill.billNo}
+              </p>
+              <p>
+                <strong>Date:</strong> {selectedBill.date}
+              </p>
+              <p>
+                <strong>Original Total:</strong> Rs.
+                {selectedBill.total?.toFixed(2) || "0.00"}
+              </p>
             </div>
           </div>
         )}
@@ -427,7 +484,11 @@ const ReturnManagement = () => {
         <div className="cashier-section">
           <div className="cashier-input-group">
             <label>Shift:</label>
-            <select value={shift} onChange={(e) => setShift(e.target.value)} className="shift-select">
+            <select
+              value={shift}
+              onChange={(e) => setShift(e.target.value)}
+              className="shift-select"
+            >
               <option value="morning">Morning</option>
               <option value="evening">Evening</option>
               <option value="night">Night</option>
@@ -450,16 +511,23 @@ const ReturnManagement = () => {
             <tbody>
               {returnItems.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-return">Select a bill to process returns</td>
+                  <td colSpan="5" className="empty-return">
+                    Select a bill to process returns
+                  </td>
                 </tr>
               ) : (
-                returnItems.map(item => (
+                returnItems.map((item) => (
                   <tr key={item._id}>
                     <td>{item.productName}</td>
                     <td>
                       <div className="quantity-control">
                         <button
-                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity - 1)}
+                          onClick={() =>
+                            updateReturnQuantity(
+                              item._id,
+                              item.returnQuantity - 1
+                            )
+                          }
                           className="btn-qty"
                           disabled={item.returnQuantity === 0}
                         >
@@ -468,13 +536,23 @@ const ReturnManagement = () => {
                         <input
                           type="number"
                           value={item.returnQuantity}
-                          onChange={(e) => updateReturnQuantity(item._id, parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            updateReturnQuantity(
+                              item._id,
+                              parseInt(e.target.value) || 0
+                            )
+                          }
                           className="qty-input"
                           min="0"
                           max={item.maxQuantity}
                         />
                         <button
-                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity + 1)}
+                          onClick={() =>
+                            updateReturnQuantity(
+                              item._id,
+                              item.returnQuantity + 1
+                            )
+                          }
                           className="btn-qty"
                           disabled={item.returnQuantity >= item.maxQuantity}
                         >
@@ -482,8 +560,11 @@ const ReturnManagement = () => {
                         </button>
                       </div>
                     </td>
-                    <td>Rs.{item.salePrice?.toFixed(2) || '0.00'}</td>
-                    <td>Rs.{((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
+                    <td>Rs.{item.salePrice?.toFixed(2) || "0.00"}</td>
+                    <td>
+                      Rs.
+                      {((item.salePrice || 0) * item.returnQuantity).toFixed(2)}
+                    </td>
                     <td>
                       <button
                         onClick={() => handleDeleteItem(item._id)}
@@ -517,24 +598,36 @@ const ReturnManagement = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="empty-bills">Loading bills...</td>
+                    <td colSpan="6" className="empty-bills">
+                      Loading bills...
+                    </td>
                   </tr>
                 ) : recentBills.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="empty-bills">No bills found</td>
+                    <td colSpan="6" className="empty-bills">
+                      No bills found
+                    </td>
                   </tr>
                 ) : (
-                  recentBills.map(bill => (
+                  recentBills.map((bill) => (
                     <tr
                       key={bill._id}
-                      className={selectedBill?._id === bill._id ? 'selected-row' : ''}
+                      className={
+                        selectedBill?._id === bill._id ? "selected-row" : ""
+                      }
                     >
                       <td className="bill-number-cell">{bill.billNo}</td>
                       <td className="bill-date-cell">{bill.date}</td>
-                      <td className="bill-items-cell">{bill.items?.length || 0}</td>
-                      <td className="bill-total-cell">Rs.{bill.total?.toFixed(2) || '0.00'}</td>
+                      <td className="bill-items-cell">
+                        {bill.items?.length || 0}
+                      </td>
+                      <td className="bill-total-cell">
+                        Rs.{bill.total?.toFixed(2) || "0.00"}
+                      </td>
                       <td>
-                        <span className="payment-badge">{bill.paymentMode?.toUpperCase() || 'N/A'}</span>
+                        <span className="payment-badge">
+                          {bill.paymentMode?.toUpperCase() || "N/A"}
+                        </span>
                       </td>
                       <td>
                         <button
@@ -560,15 +653,19 @@ const ReturnManagement = () => {
         <div className="return-summary">
           <div className="summary-row">
             <span>Selected Bill:</span>
-            <span>{selectedBill?.billNo || 'None'}</span>
+            <span>{selectedBill?.billNo || "None"}</span>
           </div>
           <div className="summary-row">
             <span>Return Items:</span>
-            <span>{returnItems.filter(i => i.returnQuantity > 0).length}</span>
+            <span>
+              {returnItems.filter((i) => i.returnQuantity > 0).length}
+            </span>
           </div>
           <div className="summary-row">
             <span>Total Quantity:</span>
-            <span>{returnItems.reduce((sum, item) => sum + item.returnQuantity, 0)}</span>
+            <span>
+              {returnItems.reduce((sum, item) => sum + item.returnQuantity, 0)}
+            </span>
           </div>
 
           <div className="summary-row total-row">
@@ -589,7 +686,11 @@ const ReturnManagement = () => {
 
           <div className="summary-row">
             <span>Refund Mode:</span>
-            <select value={refundMode} onChange={(e) => setRefundMode(e.target.value)} className="refund-select">
+            <select
+              value={refundMode}
+              onChange={(e) => setRefundMode(e.target.value)}
+              className="refund-select"
+            >
               <option value="cash">Cash</option>
               <option value="card">Card</option>
               <option value="upi">UPI</option>
@@ -601,9 +702,13 @@ const ReturnManagement = () => {
         <button
           onClick={handleGenerateReturnReceipt}
           className="btn-generate-return"
-          disabled={!selectedBill || returnItems.filter(i => i.returnQuantity > 0).length === 0 || loading}
+          disabled={
+            !selectedBill ||
+            returnItems.filter((i) => i.returnQuantity > 0).length === 0 ||
+            loading
+          }
         >
-          {loading ? 'Processing...' : 'Generate Return Receipt'}
+          {loading ? "Processing..." : "Generate Return Receipt"}
         </button>
       </div>
 
@@ -611,7 +716,10 @@ const ReturnManagement = () => {
       {showReturnReceipt && returnReceiptData && (
         <div className="receipt-popup-overlay">
           <div className="receipt-popup-container">
-            <button onClick={() => setShowReturnReceipt(false)} className="btn-close-popup">
+            <button
+              onClick={() => setShowReturnReceipt(false)}
+              className="btn-close-popup"
+            >
               <X size={20} />
             </button>
 
@@ -625,19 +733,38 @@ const ReturnManagement = () => {
 
               <div className="receipt-info">
                 <div className="Bill-date">
-                  <p><strong>Return No:</strong> {returnReceiptData.returnNo}</p>
-                  <p><strong>Return Date:</strong> {returnReceiptData.returnDate}</p>
+                  <p>
+                    <strong>Return No:</strong> {returnReceiptData.returnNo}
+                  </p>
+                  <p>
+                    <strong>Return Date:</strong> {returnReceiptData.returnDate}
+                  </p>
                 </div>
                 <div className="Cashier-info">
-                  <p><strong>Original Bill:</strong> {returnReceiptData.originalBillNo}</p>
+                  <p>
+                    <strong>Original Bill:</strong>{" "}
+                    {returnReceiptData.originalBillNo}
+                  </p>
                 </div>
                 <div className="Cashier-info">
-                  <p><strong>Bill Date:</strong> {returnReceiptData.originalBillDate}</p>
+                  <p>
+                    <strong>Bill Date:</strong>{" "}
+                    {returnReceiptData.originalBillDate}
+                  </p>
                 </div>
                 <div className="Cashier-info">
-                  <p><strong>Staff ID:</strong> {returnReceiptData.staffId}</p>
-                  <p><strong>Shift:</strong> {returnReceiptData.shift.charAt(0).toUpperCase() + returnReceiptData.shift.slice(1)}</p>
-                  <p><strong>Refund:</strong> {returnReceiptData.refundMode.toUpperCase()}</p>
+                  <p>
+                    <strong>Staff ID:</strong> {returnReceiptData.staffId}
+                  </p>
+                  <p>
+                    <strong>Shift:</strong>{" "}
+                    {returnReceiptData.shift.charAt(0).toUpperCase() +
+                      returnReceiptData.shift.slice(1)}
+                  </p>
+                  <p>
+                    <strong>Refund:</strong>{" "}
+                    {returnReceiptData.refundMode.toUpperCase()}
+                  </p>
                 </div>
               </div>
 
@@ -651,12 +778,17 @@ const ReturnManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {returnReceiptData.items.map(item => (
+                  {returnReceiptData.items.map((item) => (
                     <tr key={item._id}>
                       <td>{item.productName}</td>
                       <td>{item.returnQuantity}</td>
-                      <td>Rs.{item.salePrice?.toFixed(2) || '0.00'}</td>
-                      <td>Rs.{((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
+                      <td>Rs.{item.salePrice?.toFixed(2) || "0.00"}</td>
+                      <td>
+                        Rs.
+                        {((item.salePrice || 0) * item.returnQuantity).toFixed(
+                          2
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -679,7 +811,9 @@ const ReturnManagement = () => {
                 <p>Thank you for your cooperation</p>
                 <div className="watermark">
                   <p>Software Powered by</p>
-                  <p><strong>Zemalt PVT LTD</strong></p>
+                  <p>
+                    <strong>Zemalt PVT LTD</strong>
+                  </p>
                   <p className="phone-contact">
                     <FaPhoneAlt className="phone-icon" />
                     <span>03285522005</span>

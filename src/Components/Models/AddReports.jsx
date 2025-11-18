@@ -22,7 +22,6 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { 
   fetchAllBillReports,
@@ -47,23 +46,23 @@ const reportFieldConfig = {
   Bills: [
     { key: 'billId', label: 'Bill No', paths: ['billId', 'billNo', 'invoiceNo'] },
     { key: 'date', label: 'Date', type: 'date', paths: ['date', 'createdAt', 'billDate'] },
-    { key: 'customerName', label: 'Customer Name', paths: ['customerName', 'customerName'] },
-    { key: 'customerPhone', label: 'Customer Phone', paths: ['customerPhone', 'customerPhone'] },
+    { key: 'customerName', label: 'Customer Name', paths: ['customerName'] },
+    { key: 'customerPhone', label: 'Customer Phone', paths: ['customerPhone'] },
     { key: 'totalAmount', label: 'Total Amount', type: 'currency', paths: ['totalAmount', 'total'] },
     { key: 'discount', label: 'Discount', type: 'currency', paths: ['discount'] },
     { key: 'labourCost', label: 'Labour Cost', type: 'currency', paths: ['labourCost', 'laborCost'] },
     { key: 'userPaidAmount', label: 'Paid Amount', type: 'currency', paths: ['userPaidAmount', 'paidAmount'] },
     { key: 'remainingAmount', label: 'Remaining', type: 'currency', paths: ['remainingAmount', 'pending'] },
-    { key: 'paymentMode', label: 'Payment Mode', paths: ['paymentMode', 'paymentMethod'] },
+    { key: 'paymentMode', label: 'Payment Mode', paths: ['paymentMode'] },
     { key: 'shift', label: 'Shift', paths: ['shift'] },
-    { key: 'cashier', label: 'Cashier', paths: ['staff.name', 'cashier', 'staff'] }
+    { key: 'cashier', label: 'Cashier', paths: ['staff.name', 'cashier.name', 'staff'] }
   ],
   Expenses: [
-    { key: 'expenseId', label: 'Expense ID', paths: ['expenseId', 'ExpenseId', 'id'] },
+    { key: 'expenseId', label: 'Expense ID', paths: ['expenseId', 'id'] },
     { key: 'expenseName', label: 'Expense Name', paths: ['expenseName', 'name', 'title'] },
     { key: 'amount', label: 'Amount', type: 'currency', paths: ['amount', 'expenseAmount'] },
     { key: 'date', label: 'Date', type: 'date', paths: ['date', 'expenseDate', 'createdAt'] },
-    { key: 'description', label: 'Description', paths: ['description', 'remarks', 'notes'] },
+    { key: 'description', label: 'Description', paths: ['description', 'remarks'] },
   ]
 };
 
@@ -106,17 +105,10 @@ const extractInfo = (value, field) => {
   if (typeof value === 'object') {
     if (field === 'cashier' || field === 'paidBy') {
       if (value.name) return value.name;
-      if (value.firstName && value.lastName) return `${value.firstName} ${value.lastName}`;
       if (value.firstName) return value.firstName;
     }
     
-    if (field === 'category') {
-      if (value.name) return value.name;
-      if (value.categoryName) return value.categoryName;
-    }
-    
     if (value.name) return value.name;
-    if (value.title) return value.title;
   }
   
   return null;
@@ -138,8 +130,7 @@ const formatFieldName = (field) => {
     paymentMode: 'Payment Mode',
     labourCost: 'Labour Cost',
     expenseId: 'Expense ID',
-    expenseName: 'Expense Name',
-    paidBy: 'Paid By'
+    expenseName: 'Expense Name'
   };
 
   if (customLabels[field]) return customLabels[field];
@@ -267,16 +258,11 @@ const POSReports = () => {
   const [savedReports, setSavedReports] = useState([]);
   const [showForm, setShowForm] = useState(false);
   
-  // All data from backend
-  const [stockData, setStockData] = useState([]);
-  const [billsData, setBillsData] = useState([]);
-  const [expensesData, setExpensesData] = useState([]);
+  // Only using specific loading state for API calls
+  const [apiLoading, setApiLoading] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState(true);
   const [viewingReport, setViewingReport] = useState(null);
-  const [selectedReportType, setSelectedReportType] = useState("");
 
-  
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState({ 
     open: false, 
@@ -293,57 +279,44 @@ const POSReports = () => {
   });
 
   useEffect(() => {
-    fetchAllData();
     loadSavedReports();
   }, []);
 
-const fetchAllData = async (type) => {
-  setDataLoading(true);
+  // UPDATED: This function now returns data directly instead of relying on state
+  // and accepts the specific type to fetch.
+  const fetchSpecificData = async (type) => {
+    setApiLoading(true);
+    try {
+      let responseData = [];
+      
+      // Only call the API matching the selected type
+      if (type === "bills") {
+        const response = await fetchAllBillReports(1, 1000, "");
+        responseData = response?.data?.data || response?.data || response || [];
+      } 
+      else if (type === "expenses") {
+        const response = await fetchAllExpenseReports(1, 1000, "");
+        responseData = response?.data?.data || response?.data || response || [];
+      } 
+      else if (type === "stock") {
+        const response = await fetchAllStockReports(1, 1000, "");
+        responseData = response?.data?.data || response?.data || response || [];
+      }
 
-  try {
-    let stockRes = [];
-    let billsRes = [];
-    let expensesRes = [];
+      return responseData;
 
-    if (type === "bills") {
-      billsRes = await fetchAllBillReports(1, 1000, "");
-      setBillsData(billsRes?.data || billsRes || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setSnackbar({
+        open: true,
+        message: "Error loading data. Please refresh the page.",
+        severity: "error"
+      });
+      return [];
+    } finally {
+      setApiLoading(false);
     }
-
-    if (type === "expenses") {
-      expensesRes = await fetchAllExpenseReports(1, 1000, "");
-      setExpensesData(expensesRes?.data || expensesRes || []);
-    }
-
-    if (type === "stock") {
-      stockRes = await fetchAllStockReports(1, 1000, "");
-      setStockData(stockRes?.data || stockRes || []);
-    }
-
-    if (type === "all") {
-      const [exp, bills, stock] = await Promise.all([
-        fetchAllExpenseReports(1, 1000, ""),
-        fetchAllBillReports(1, 1000, ""),
-        fetchAllStockReports(1, 1000, ""),
-      ]);
-      setExpensesData(exp?.data || exp || []);
-      setBillsData(bills?.data || bills || []);
-      setStockData(stock?.data || stock || []);
-    }
-
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    setSnackbar({
-      open: true,
-      message: "Error loading data. Please refresh the page.",
-      severity: "error"
-    });
-  } finally {
-    setDataLoading(false);
-  }
-};
-
-
+  };
 
   const loadSavedReports = () => {
     const saved = localStorage.getItem('posReports');
@@ -356,37 +329,42 @@ const fetchAllData = async (type) => {
     localStorage.setItem('posReports', JSON.stringify(reports));
   };
 
-const handleGenerate = async () => {
-  if (!reportType) {
-    setSnackbar({
-      open: true,
-      message: "Please select a report type",
-      severity: "warning",
-    });
-    return;
-  }
+  // UPDATED: Handle Generate now awaits the specific API call and sets data immediately
+  const handleGenerate = async () => {
+    if (!reportType) {
+      setSnackbar({
+        open: true,
+        message: "Please select a report type",
+        severity: "warning",
+      });
+      return;
+    }
 
-  const type = reportType.toLowerCase();
-  await fetchAllData(type);
+    // Clear previous data to avoid confusion
+    setData([]); 
+    setShowForm(false);
 
-  let selectedData = [];
+    const type = reportType.toLowerCase();
+    
+    // 1. Call only specific API
+    // 2. Wait for result
+    const fetchedData = await fetchSpecificData(type);
 
-  switch (reportType) {
-    case "Stock":
-      selectedData = [...stockData];
-      break;
-    case "Bills":
-      selectedData = [...billsData];
-      break;
-    case "Expenses":
-      selectedData = [...expensesData];
-      break;
-  }
-
-  console.log("Generated data:", selectedData);
-  setData(selectedData);
-  setShowForm(true);
-};
+    // 3. Update Table Data directly with result
+    if (fetchedData && fetchedData.length > 0) {
+      console.log(`Generated ${reportType} data:`, fetchedData);
+      setData(fetchedData);
+      setShowForm(true);
+    } else {
+      setSnackbar({
+        open: true,
+        message: `No records found for ${reportType}`,
+        severity: "info"
+      });
+      setData([]);
+      setShowForm(true); // Show empty table container
+    }
+  };
 
   const handleSubmit = async () => {
     if (!title || !reportType) {
@@ -620,22 +598,6 @@ const handleGenerate = async () => {
     );
   };
 
-  if (dataLoading) {
-    return (
-      <Box 
-        display="flex" 
-        justifyContent="center" 
-        alignItems="center" 
-        minHeight="400px"
-        flexDirection="column"
-        gap={2}
-      >
-        <CircularProgress size={48} />
-        <Typography variant="body1" color="text.secondary">Loading data...</Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box sx={{ maxWidth: 1400, margin: "0 auto", p: 4 }}>
       {/* Delete Confirmation Dialog */}
@@ -791,7 +753,7 @@ const handleGenerate = async () => {
             variant="contained" 
             color="primary" 
             onClick={handleGenerate} 
-            disabled={!reportType}
+            disabled={!reportType || apiLoading}
             sx={{ 
               px: 4, 
               py: 1.5,
@@ -799,7 +761,7 @@ const handleGenerate = async () => {
               fontSize: "1rem"
             }}
           >
-            Generate Report
+            {apiLoading ? <CircularProgress size={24} color="inherit" /> : "Generate Report"}
           </Button>
         </Box>
       </Paper>
