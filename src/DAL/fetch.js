@@ -122,3 +122,29 @@ export const fetchProductsList = async (page = 1, limit = 50, keyword = "") => {
 };
 
  
+
+export const searchBillById = async (billId) => {
+  const reqObj = {
+    path: `/bill/${billId}`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: {},
+  };
+  return invokeApi(reqObj);
+};
+export const processReturnBill = async (billNo, returnData) => {
+  const reqObj = {
+    path: `/bill/${billNo}`,
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+      "Content-Type": "application/json",
+    },
+    postData: returnData,
+  };
+  return invokeApi(reqObj);
+};
+
+ 

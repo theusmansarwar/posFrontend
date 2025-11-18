@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Trash2, RotateCcw, Printer, Download, Search, X, PackageX } from 'lucide-react';
+import { Trash2, Printer, Download, Search, X } from 'lucide-react';
 import { FaPhoneAlt } from "react-icons/fa";
 import './Return.css';
 import logoo from '../../Assets/logoo.jpg';
 
+// Import API functions from DAL
+import { 
+  fetchallBilllist,  
+  searchBillById,     
+  processReturnBill 
+} from '../../DAL/fetch';
+
 const ReturnManagement = () => {
-  const [searchBillId, setSearchBillId] = useState('BILL-');
+  const [searchBillId, setSearchBillId] = useState('');
   const [recentBills, setRecentBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [returnItems, setReturnItems] = useState([]);
@@ -18,15 +25,11 @@ const ReturnManagement = () => {
   const [loading, setLoading] = useState(false);
   const receiptRef = useRef();
 
-  // Fetch recent bills on component mount
   useEffect(() => {
-
-
     const loggedInUser = localStorage.getItem("userData");
     if (loggedInUser) {
       try {
         const userData = JSON.parse(loggedInUser);
-        // Set staff ID from user data (adjust the property name based on your user object structure)
         if (userData._id) {
           setStaffId(userData._id);
         } else if (userData.id) {
@@ -39,54 +42,67 @@ const ReturnManagement = () => {
       }
     }
 
-
-    fetchRecentBills();
+    // Load initial bills
+    loadBills();
   }, []);
 
-  const fetchRecentBills = async () => {
+  // ✅ Single function for both fetch and search
+  const loadBills = async (searchKeyword = "") => {
     try {
       setLoading(true);
-      const response = await fetch('https://pos.ztesting.site/backend/bill/list');
-      if (response.ok) {
-        const result = await response.json();
-        // Map API response to expected format
-        const mappedBills = result.data ? result.data.map(bill => ({
-          _id: bill._id,
-          billNo: bill.billId,
-          date: new Date(bill.createdAt).toLocaleString(),
-          items: bill.items,
-          total: bill.totalAmount,
-          paymentMode: bill.paymentMode
-        })) : result.map(bill => ({
-          _id: bill._id,
-          billNo: bill.billId || bill.billNo,
-          date: bill.createdAt ? new Date(bill.createdAt).toLocaleString() : bill.date,
-          items: bill.items,
-          total: bill.totalAmount || bill.total,
-          paymentMode: bill.paymentMode
-        }));
-        setRecentBills(mappedBills);
-      }
+      const response = await fetchallBilllist(1, 50, searchKeyword);
+      
+      const mappedBills = response.data ? response.data.map(bill => ({
+        _id: bill._id,
+        billNo: bill.billId,
+        date: new Date(bill.createdAt).toLocaleString(),
+        items: bill.items,
+        total: bill.totalAmount,
+        paymentMode: bill.paymentMode
+      })) : response.map(bill => ({
+        _id: bill._id,
+        billNo: bill.billId || bill.billNo,
+        date: bill.createdAt ? new Date(bill.createdAt).toLocaleString() : bill.date,
+        items: bill.items,
+        total: bill.totalAmount || bill.total,
+        paymentMode: bill.paymentMode
+      }));
+      setRecentBills(mappedBills);
     } catch (error) {
-      console.error('Error fetching recent bills:', error);
+      console.error('Error fetching bills:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Search handler - uses same function
   const handleSearchBill = async () => {
-    if (!searchBillId.trim() || searchBillId === 'BILL-') {
-      alert('Please enter a bill number!');
+    if (!searchBillId.trim()) {
+      // If search is empty, load all bills
+      loadBills();
       return;
     }
 
+    // Search bills by keyword
+    await loadBills(searchBillId);
+  };
+
+  // ✅ Real-time search as user types (optional)
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      loadBills(searchBillId);
+    }, 300); // Wait 300ms after user stops typing
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchBillId]);
+
+  const handleBillSelect = async (bill) => {
+    // If we need full bill details, fetch by ID
     try {
       setLoading(true);
-      const response = await fetch(`https://pos.ztesting.site/backend/bill/${searchBillId}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        // Map API response to expected format
+      const result = await searchBillById(bill.billNo);
+      
+      if (result && result.data) {
         const mappedBill = {
           _id: result.data._id,
           billNo: result.data.billId,
@@ -98,41 +114,27 @@ const ReturnManagement = () => {
           staffId: result.data.staff?.name || 'N/A',
           shift: result.data.shift
         };
-        handleBillSelect(mappedBill);
-      } else {
-        alert('Bill not found!');
+        setSelectedBill(mappedBill);
+        
+        const itemsWithReturnQty = mappedBill.items.map(item => ({
+          ...item,
+          returnQuantity: item.quantity,
+          maxQuantity: item.quantity
+        }));
+        setReturnItems(itemsWithReturnQty);
       }
     } catch (error) {
-      console.error('Error searching bill:', error);
-      alert('Error searching bill. Please try again!');
+      console.error('Error fetching bill details:', error);
+      alert('Error loading bill details!');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBillSelect = (bill) => {
-    setSelectedBill(bill);
-    // Auto-fill return items with all items from the bill
-    // returnQuantity ko item ki quantity se initialize karo
-    const itemsWithReturnQty = bill.items.map(item => ({
-      ...item,
-      returnQuantity: item.quantity, // Puri quantity auto-fill ho jayegi
-      maxQuantity: item.quantity
-    }));
-    setReturnItems(itemsWithReturnQty);
-  };
-
   const handleSearchInputChange = (e) => {
-    const value = e.target.value;
-    // Always keep "BILL-" prefix
-    if (!value.startsWith('BILL-')) {
-      setSearchBillId('BILL-');
-    } else {
-      setSearchBillId(value);
-    }
+    setSearchBillId(e.target.value);
   };
 
-  // FIXED: Update return quantity function
   const updateReturnQuantity = (_id, newQuantity) => {
     setReturnItems(returnItems.map(item => {
       if (item._id === _id) {
@@ -143,54 +145,13 @@ const ReturnManagement = () => {
     }));
   };
 
-  // FIXED: Delete item from return list
   const handleDeleteItem = (_id) => {
     setReturnItems(returnItems.filter(item => item._id !== _id));
-  };
-
-  const handleRestockItem = async (_id) => {
-    const item = returnItems.find(i => i._id === _id);
-    if (!item || item.returnQuantity === 0) {
-      alert('Please set return quantity first!');
-      return;
-    }
-
-    // API call for restocking
-    try {
-      const response = await fetch('https://pos.ztesting.site/backend/inventory/restock', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          productId: item.productId,
-          quantity: item.returnQuantity
-        })
-      });
-
-      if (response.ok) {
-        alert(`Successfully restocked ${item.returnQuantity} units of ${item.productName}`);
-
-        // Remove returned quantity from the item
-        setReturnItems(returnItems.map(i => {
-          if (i._id === _id) {
-            return { ...i, maxQuantity: i.maxQuantity - i.returnQuantity, returnQuantity: 0 };
-          }
-          return i;
-        }));
-      } else {
-        alert('Failed to restock item!');
-      }
-    } catch (err) {
-      console.error('Restock error:', err);
-      alert('Failed to restock item!');
-    }
   };
 
   const calculateReturnTotal = () => {
     return returnItems.reduce((sum, item) => sum + (item.salePrice * item.returnQuantity), 0);
   };
-
 
   const handleGenerateReturnReceipt = async () => {
     const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
@@ -213,12 +174,11 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
 
-      // ✅ Match your backend’s expected structure
       const returnData = {
-        billId: selectedBill.billNo, // BILL-000020
-        isDeleted: false,            // ensure reactivation if needed
+        billId: selectedBill.billNo,
+        isDeleted: false,
         items: itemsToReturn.map(item => ({
-          productId: item.productId?._id || item.productId, // handle object or ID
+          productId: item.productId?._id || item.productId,
           productName: item.productName,
           quantity: item.returnQuantity,
           salePrice: item.salePrice,
@@ -230,19 +190,9 @@ const ReturnManagement = () => {
         shift
       };
 
-      // ✅ Use your actual bill update endpoint
-      const response = await fetch(
-        `https://pos.ztesting.site/backend/bill/${selectedBill.billNo}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(returnData)
-        }
-      );
+      const result = await processReturnBill(selectedBill.billNo, returnData);
 
-      if (response.ok) {
-        const result = await response.json();
-
+      if (result) {
         const returnReceipt = {
           returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
@@ -258,20 +208,16 @@ const ReturnManagement = () => {
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
-
       } else {
-        const errorData = await response.json();
-        console.error('Return error:', errorData);
-        alert(`Failed to process return: ${errorData.message || 'Unknown error'}`);
+        alert('Failed to process return!');
       }
     } catch (error) {
       console.error('Error processing return:', error);
-      alert('Error processing return. Please try again!');
+      alert(`Failed to process return: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
-
 
   const handlePrint = () => {
     const printWindow = window.open('', '', 'width=800,height=600');
@@ -448,14 +394,13 @@ const ReturnManagement = () => {
       {/* Left Side - Available Bills */}
       <div className="return-left-section">
         <h2 className="section-title">
-
           Return Management
         </h2>
 
         <div className="search-section">
           <input
             type="text"
-            placeholder="Enter bill number (e.g., BILL-000009)"
+            placeholder="Search by Bill ID or Customer Name..."
             value={searchBillId}
             onChange={handleSearchInputChange}
             onKeyPress={(e) => e.key === 'Enter' && handleSearchBill()}
@@ -465,8 +410,6 @@ const ReturnManagement = () => {
             <Search size={20} /> {loading ? 'Searching...' : 'Search'}
           </button>
         </div>
-
-
 
         {selectedBill && (
           <div className="selected-bill-info">
@@ -480,16 +423,6 @@ const ReturnManagement = () => {
         )}
 
         <div className="cashier-section">
-          {/* <div className="cashier-input-group">
-            <label>Staff ID:</label>
-            <input
-              type="text"
-              placeholder="Enter staff ID"
-              value={staffId}
-              onChange={(e) => setStaffId(e.target.value)}
-              className="cashier-input"
-            />
-          </div> */}
           <div className="cashier-input-group">
             <label>Shift:</label>
             <select value={shift} onChange={(e) => setShift(e.target.value)} className="shift-select">
@@ -586,7 +519,7 @@ const ReturnManagement = () => {
                   </tr>
                 ) : recentBills.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="empty-bills">No recent bills found</td>
+                    <td colSpan="6" className="empty-bills">No bills found</td>
                   </tr>
                 ) : (
                   recentBills.map(bill => (
