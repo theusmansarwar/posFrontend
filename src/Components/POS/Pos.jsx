@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
 import {
   Trash2,
   Plus,
@@ -14,6 +13,7 @@ import logoo from "../../Assets/logoo.jpg";
 import "./Pos.css";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { fetchProductsList, createBill } from "../../DAL/fetch";
 
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
@@ -22,6 +22,8 @@ const POSBillingSystem = () => {
   const [discountValue, setDiscountValue] = useState(0);
   const [laborCost, setLaborCost] = useState(0);
   const [customerPay, setCustomerPay] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [staffId, setStaffId] = useState("");
   const [shift, setShift] = useState("morning");
   const [paymentMode, setPaymentMode] = useState("cash");
@@ -44,34 +46,24 @@ const POSBillingSystem = () => {
       }
     }
 
-    const fetchProducts = async (keyword = "") => {
-      try {
-        const res = await axios.get(
-          `https://pos.ztesting.site/backend/stock/list?page=1&limit=50&keyword=${keyword}`
-        );
-        setProducts(res.data?.data || res.data);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      }
-    };
-
-    fetchProducts();
+    // Initial fetch of products
+    loadProducts();
   }, []);
+
+  // Load products using API service
+  const loadProducts = async (keyword = "") => {
+    try {
+      const response = await fetchProductsList(1, 50, keyword);
+      setProducts(response.data?.data || response.data || []);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    }
+  };
 
   // Update products table on search
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      const fetchProducts = async () => {
-        try {
-          const res = await axios.get(
-            `https://pos.ztesting.site/backend/stock/list?page=1&limit=50&keyword=${searchId}`
-          );
-          setProducts(res.data?.data || res.data);
-        } catch (err) {
-          console.error("Error fetching products:", err);
-        }
-      };
-      fetchProducts();
+      loadProducts(searchId);
     }, 300);
 
     return () => clearTimeout(delayDebounce);
@@ -82,8 +74,17 @@ const POSBillingSystem = () => {
     if (existingItem) {
       updateQuantity(product._id, existingItem.quantity + 1);
     } else {
-      setCartItems([...cartItems, { ...product, quantity: 1 }]);
+      setCartItems([...cartItems, { ...product, quantity: 1, salePrice: 1.00 }]);
     }
+  };
+
+  const updateSalePrice = (_id, newPrice) => {
+    const price = parseFloat(newPrice) || 0;
+    setCartItems(
+      cartItems.map((item) =>
+        item._id === _id ? { ...item, salePrice: price } : item
+      )
+    );
   };
 
   const updateQuantity = (_id, newQuantity) => {
@@ -150,6 +151,19 @@ const POSBillingSystem = () => {
       return;
     }
 
+    // Check if remaining amount exists and customer details are required
+    const remaining = calculateRemaining();
+    if (remaining > 0) {
+      if (!customerName.trim()) {
+        alert("Please enter customer name for remaining amount!");
+        return;
+      }
+      if (!customerPhone.trim()) {
+        alert("Please enter customer phone number for remaining amount!");
+        return;
+      }
+    }
+
     const payload = {
       items: cartItems.map((item) => ({
         productId: item._id,
@@ -160,30 +174,26 @@ const POSBillingSystem = () => {
       paymentMode: paymentMode,
       totalAmount: parseFloat(calculateTotal().toFixed(2)),
       userPaidAmount: parseFloat(customerPay),
-      remainingAmount: parseFloat(calculateRemaining().toFixed(2)),
+      remainingAmount: parseFloat(remaining.toFixed(2)),
       change: parseFloat(calculateChange().toFixed(2)),
       staff: staffId,
       shift: shift,
+      ...(remaining > 0 && {
+        customerName: customerName,
+        customerPhone: customerPhone,
+      }),
     };
 
     try {
-      const response = await axios.post(
-        "https://pos.ztesting.site/backend/bill/create",
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await createBill(payload);
 
       const bill = {
         billNo:
+          response.billId ||
           response.data?.billId ||
-          response.data?.data?.billId ||
           `BILL-${Date.now()}`,
-        date: response.data?.createdAt
-          ? new Date(response.data.createdAt).toLocaleString()
+        date: response.createdAt
+          ? new Date(response.createdAt).toLocaleString()
           : new Date().toLocaleString(),
         items: cartItems,
         subtotal: calculateSubtotal(),
@@ -194,10 +204,14 @@ const POSBillingSystem = () => {
         total: calculateTotal(),
         customerPaid: parseFloat(customerPay) || 0,
         change: calculateChange(),
-        remainingAmount: calculateRemaining(),
-        cashierName: response.data?.data?.staff?.name || "Admin",
+        remainingAmount: remaining,
+        cashierName: response.data?.staff?.name || "Admin",
         shift: shift,
         paymentMode: paymentMode,
+        ...(remaining > 0 && {
+          customerName: customerName,
+          customerPhone: customerPhone,
+        }),
       };
 
       setBillData(bill);
@@ -207,6 +221,8 @@ const POSBillingSystem = () => {
       setDiscountValue(0);
       setLaborCost(0);
       setCustomerPay("");
+      setCustomerName("");
+      setCustomerPhone("");
     } catch (error) {
       console.error("Error creating bill:", error);
       alert(
@@ -218,7 +234,6 @@ const POSBillingSystem = () => {
   };
 
   const handlePrint = () => {
-    // Get the actual logo element from the current document
     const logoElement = billRef.current?.querySelector(".company-logo");
     const logoSrc = logoElement?.src || logoo;
 
@@ -396,18 +411,15 @@ const POSBillingSystem = () => {
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Resize image to fit the page while keeping aspect ratio
-    let imgWidth = pageWidth - 20; // margin 10 on each side
+    let imgWidth = pageWidth - 20;
     let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    // If still too tall, scale it further
     if (imgHeight > pageHeight - 20) {
       const scaleFactor = (pageHeight - 20) / imgHeight;
       imgWidth *= scaleFactor;
       imgHeight *= scaleFactor;
     }
 
-    // Center horizontally
     const xPosition = (pageWidth - imgWidth) / 2;
     const yPosition = 10;
 
@@ -469,7 +481,7 @@ const POSBillingSystem = () => {
               )}
             </tbody>
           </table>
-        </div>{" "}
+        </div>
         <div className="cashier-section">
           <div className="cashier-input-group">
             <label>Shift:</label>
@@ -499,7 +511,7 @@ const POSBillingSystem = () => {
             <tbody>
               {cartItems.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-cart">
+                  <td colSpan="6" className="empty-cart">
                     No items in cart
                   </td>
                 </tr>
@@ -529,7 +541,23 @@ const POSBillingSystem = () => {
                       </div>
                     </td>
                     <td>Rs. {item.unitPrice?.toFixed(2) || "0.00"}</td>
-                    <td>Rs. {item.salePrice?.toFixed(2) || "0.00"}</td>
+                    <td>
+                      <input
+                        type="number"
+                        value={item.salePrice}
+                        onChange={(e) => updateSalePrice(item._id, e.target.value)}
+                        className="sale-price-input"
+                        min="0"
+                        step="0.01"
+                        style={{
+                          width: "80px",
+                          padding: "4px 8px",
+                          border: "1px solid #d1d5db",
+                          borderRadius: "4px",
+                          fontSize: "13px"
+                        }}
+                      />
+                    </td>
                     <td>Rs. {(item.salePrice * item.quantity).toFixed(2)}</td>
                     <td>
                       <button
@@ -547,7 +575,6 @@ const POSBillingSystem = () => {
         </div>
       </div>
 
-      {/* Right Side - Billing Section */}
       <div className="pos-right-section">
         <h1 className="pos-title">POS Billing System</h1>
 
@@ -671,6 +698,33 @@ const POSBillingSystem = () => {
             <span>Remaining Amount:</span>
             <span>Rs. {calculateRemaining().toFixed(2)}</span>
           </div>
+
+          {calculateRemaining() > 0 && (
+            <div className="customer-details-section">
+              <div className="summary-row">
+                <span>Customer Name:</span>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="discount-input"
+                  placeholder="Enter customer name"
+                  required
+                />
+              </div>
+              <div className="summary-row">
+                <span>Customer Phone:</span>
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="discount-input"
+                  placeholder="Enter phone number"
+                  required
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <button onClick={handleGenerateBill} className="btn-generate">
@@ -678,7 +732,6 @@ const POSBillingSystem = () => {
         </button>
       </div>
 
-      {/* Bill Popup Modal */}
       {showBillPopup && billData && (
         <div className="bill-popup-overlay">
           <div className="bill-popup-container">
@@ -724,6 +777,16 @@ const POSBillingSystem = () => {
                     {billData.paymentMode.toUpperCase()}
                   </p>
                 </div>
+                {billData.remainingAmount > 0 && (
+                  <div className="customer-info">
+                    <p>
+                      <strong>Customer:</strong> {billData.customerName}
+                    </p>
+                    <p>
+                      <strong>Phone:</strong> {billData.customerPhone}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <table className="receipt-table">
