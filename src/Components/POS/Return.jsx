@@ -8,8 +8,10 @@ import logoo from '../../Assets/logoo.jpg';
 import { 
   fetchallBilllist,  
   searchBillById,     
-  processReturnBill 
+  
 } from '../../DAL/fetch';
+
+import {updateBill} from '../../DAL/edit'
 
 const ReturnManagement = () => {
   const [searchBillId, setSearchBillId] = useState('');
@@ -190,7 +192,7 @@ const ReturnManagement = () => {
         shift
       };
 
-      const result = await processReturnBill(selectedBill.billNo, returnData);
+      const result = await updateBill(selectedBill.billNo, returnData); 
 
       if (result) {
         const returnReceipt = {

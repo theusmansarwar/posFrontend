@@ -134,17 +134,4 @@ export const searchBillById = async (billId) => {
   };
   return invokeApi(reqObj);
 };
-export const processReturnBill = async (billNo, returnData) => {
-  const reqObj = {
-    path: `/bill/${billNo}`,
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("Token")}`,
-      "Content-Type": "application/json",
-    },
-    postData: returnData,
-  };
-  return invokeApi(reqObj);
-};
-
  

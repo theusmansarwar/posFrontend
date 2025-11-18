@@ -43,3 +43,16 @@ export const updateExpense = async (id,data) => {
   return invokeApi(reqObj);
 };
 
+export const updateBill = async (billNo, returnData) => {
+  const reqObj = {
+    path: `/bill/${billNo}`,
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+      "Content-Type": "application/json",
+    },
+    postData: returnData,
+  };
+  return invokeApi(reqObj);
+};
+
