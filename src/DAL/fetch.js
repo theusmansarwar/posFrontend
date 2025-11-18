@@ -121,15 +121,4 @@ export const fetchProductsList = async (page = 1, limit = 50, keyword = "") => {
   return invokeApi(reqObj);
 };
 
-export const createBill = async (billData) => {
-  const reqObj = {
-    path: "/bill/create",
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("Token")}`,
-      "Content-Type": "application/json",
-    },
-    postData: billData,
-  };
-  return invokeApi(reqObj);
-};
+ 

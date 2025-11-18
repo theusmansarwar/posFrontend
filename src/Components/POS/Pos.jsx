@@ -13,7 +13,8 @@ import logoo from "../../Assets/logoo.jpg";
 import "./Pos.css";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import { fetchProductsList, createBill } from "../../DAL/fetch";
+import { fetchProductsList } from "../../DAL/fetch";
+import {createBill} from "../../DAL/create";
 
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
