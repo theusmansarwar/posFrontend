@@ -196,7 +196,7 @@ const ReturnManagement = () => {
 
       if (result) {
         const returnReceipt = {
-          returnNo: RET-${Date.now()},
+          returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
           originalBillDate: selectedBill.date,
           returnDate: new Date().toLocaleString(),
@@ -215,7 +215,7 @@ const ReturnManagement = () => {
       }
     } catch (error) {
       console.error('Error processing return:', error);
-      alert(Failed to process return: ${error.message || 'Unknown error'});
+      alert(`Failed to process return: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -387,7 +387,7 @@ const ReturnManagement = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = return-${returnReceiptData?.returnNo}.html;
+    a.download = `return-${returnReceiptData?.returnNo}.html`;
     a.click();
   };
 
