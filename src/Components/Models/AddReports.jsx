@@ -25,9 +25,9 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditIcon from "@mui/icons-material/Edit";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import { 
-  fetchallStocklist, 
-  fetchallExpenselist, 
-  fetchallBilllist 
+  fetchAllBillReports,
+  fetchAllExpenseReports,
+  fetchAllStockReports
 } from "../../DAL/fetch";
 
 const reportTypes = ["Stock", "Bills", "Expenses"];
@@ -274,6 +274,8 @@ const POSReports = () => {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [viewingReport, setViewingReport] = useState(null);
+  const [selectedReportType, setSelectedReportType] = useState("");
+
   
   // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState({ 
@@ -295,31 +297,53 @@ const POSReports = () => {
     loadSavedReports();
   }, []);
 
-  const fetchAllData = async () => {
-    setDataLoading(true);
-    try {
-      const [stockRes, billsRes, expensesRes] = await Promise.all([
-        fetchallStocklist(1, 1000, ""),
-        fetchallBilllist(1, 1000, ""),
-        fetchallExpenselist(1, 1000, "")
-      ]);
+const fetchAllData = async (type) => {
+  setDataLoading(true);
 
-      setStockData(stockRes?.data || stockRes || []);
+  try {
+    let stockRes = [];
+    let billsRes = [];
+    let expensesRes = [];
+
+    if (type === "bills") {
+      billsRes = await fetchAllBillReports(1, 1000, "");
       setBillsData(billsRes?.data || billsRes || []);
-      setExpensesData(expensesRes?.data || expensesRes || []);
-      
-      console.log("POS Data fetched:", { stockRes, billsRes, expensesRes });
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setSnackbar({
-        open: true,
-        message: "Error loading data. Please refresh the page.",
-        severity: "error"
-      });
-    } finally {
-      setDataLoading(false);
     }
-  };
+
+    if (type === "expenses") {
+      expensesRes = await fetchAllExpenseReports(1, 1000, "");
+      setExpensesData(expensesRes?.data || expensesRes || []);
+    }
+
+    if (type === "stock") {
+      stockRes = await fetchAllStockReports(1, 1000, "");
+      setStockData(stockRes?.data || stockRes || []);
+    }
+
+    if (type === "all") {
+      const [exp, bills, stock] = await Promise.all([
+        fetchAllExpenseReports(1, 1000, ""),
+        fetchAllBillReports(1, 1000, ""),
+        fetchAllStockReports(1, 1000, ""),
+      ]);
+      setExpensesData(exp?.data || exp || []);
+      setBillsData(bills?.data || bills || []);
+      setStockData(stock?.data || stock || []);
+    }
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    setSnackbar({
+      open: true,
+      message: "Error loading data. Please refresh the page.",
+      severity: "error"
+    });
+  } finally {
+    setDataLoading(false);
+  }
+};
+
+
 
   const loadSavedReports = () => {
     const saved = localStorage.getItem('posReports');
@@ -332,35 +356,37 @@ const POSReports = () => {
     localStorage.setItem('posReports', JSON.stringify(reports));
   };
 
-  const handleGenerate = () => {
-    if (!reportType) {
-      setSnackbar({
-        open: true,
-        message: "Please select a report type",
-        severity: "warning"
-      });
-      return;
-    }
+const handleGenerate = async () => {
+  if (!reportType) {
+    setSnackbar({
+      open: true,
+      message: "Please select a report type",
+      severity: "warning",
+    });
+    return;
+  }
 
-    let selectedData = [];
-    switch (reportType) {
-      case "Stock":
-        selectedData = [...stockData];
-        break;
-      case "Bills":
-        selectedData = [...billsData];
-        break;
-      case "Expenses":
-        selectedData = [...expensesData];
-        break;
-      default:
-        selectedData = [];
-    }
+  const type = reportType.toLowerCase();
+  await fetchAllData(type);
 
-    console.log("Generated data:", selectedData);
-    setData(selectedData);
-    setShowForm(true);
-  };
+  let selectedData = [];
+
+  switch (reportType) {
+    case "Stock":
+      selectedData = [...stockData];
+      break;
+    case "Bills":
+      selectedData = [...billsData];
+      break;
+    case "Expenses":
+      selectedData = [...expensesData];
+      break;
+  }
+
+  console.log("Generated data:", selectedData);
+  setData(selectedData);
+  setShowForm(true);
+};
 
   const handleSubmit = async () => {
     if (!title || !reportType) {

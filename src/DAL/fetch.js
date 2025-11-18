@@ -84,12 +84,35 @@ export const fetchallStocklist = async (page, rowsPerPages, searchQuery) => {
   return invokeApi(reqObj);
 };
 
+export const fetchAllStockReports = async (page, rowsPerPages, searchQuery) => {
+  const reqObj = {
+    path: `/stock/report`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: {},
+  };
+  return invokeApi(reqObj);
+};
+
 export const fetchallExpenselist = async (page, rowsPerPages, searchQuery) => {
   const reqObj = {
     path: `/expense/list?limit=${rowsPerPages}&page=${page}&keyword=${searchQuery}`,
     method: "GET",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: {},
+  };
+  return invokeApi(reqObj);
+};
+export const fetchAllExpenseReports = async (page, rowsPerPages, searchQuery) => {
+  const reqObj = {
+    path: `/Expense/report`,
+    method: "GET",
+    headers: {
+      AuthorizatiEon: `Bearer ${localStorage.getItem("Token")}`,
     },
     postData: {},
   };
@@ -110,7 +133,7 @@ export const fetchSaleslist = async (page, rowsPerPages, searchQuery) => {
 
 
 export const fetchallBilllist = async (page, rowsPerPages, searchQuery) => {
-  const reqObj = {
+ const reqObj = {
     path: `/bill/list?limit=${rowsPerPages}&page=${page}&keyword=${searchQuery}`,
     method: "GET",
     headers: {
@@ -121,6 +144,17 @@ export const fetchallBilllist = async (page, rowsPerPages, searchQuery) => {
   return invokeApi(reqObj);
 };
 
+export const fetchAllBillReports = async (page, rowsPerPages, searchQuery) => {
+ const reqObj = {
+    path: `/bill/report`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: {},
+  };
+  return invokeApi(reqObj);
+};
 // New API functions for POS Billing System
 export const fetchProductsList = async (page = 1, limit = 50, keyword = "") => {
   const reqObj = {
@@ -134,7 +168,6 @@ export const fetchProductsList = async (page = 1, limit = 50, keyword = "") => {
   return invokeApi(reqObj);
 };
 
- 
 
 export const searchBillById = async (billId) => {
   const reqObj = {

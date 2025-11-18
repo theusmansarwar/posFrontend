@@ -90,3 +90,16 @@ export const createBill = async (billData) => {
   };
   return invokeApi(reqObj);
 };
+
+export const createReport = async (billData) => {
+  const reqObj = {
+    path: "/bill/report",
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+      "Content-Type": "application/json",
+    },
+    postData: billData,
+  };
+  return invokeApi(reqObj);
+};
