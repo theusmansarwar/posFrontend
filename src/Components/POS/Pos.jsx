@@ -200,7 +200,7 @@ const POSBillingSystem = () => {
       };
 
       setBillData(bill);
-      if(response.status === 200){
+      if(response.status == 200 || response.status == 201){
         setShowBillPopup(true);
       }
       else{
