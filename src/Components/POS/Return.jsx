@@ -28,6 +28,7 @@ const ReturnManagement = () => {
   const receiptRef = useRef();
 
   useEffect(() => {
+<<<<<<< Updated upstream
     const loggedInUser = localStorage.getItem("userData");
     if (loggedInUser) {
       try {
@@ -46,6 +47,9 @@ const ReturnManagement = () => {
 
     // Load initial bills
     loadBills();
+=======
+    fetchRecentBills();
+>>>>>>> Stashed changes
   }, []);
 
   // ✅ Single function for both fetch and search
@@ -102,9 +106,17 @@ const ReturnManagement = () => {
     // If we need full bill details, fetch by ID
     try {
       setLoading(true);
+<<<<<<< Updated upstream
       const result = await searchBillById(bill.billNo);
       
       if (result && result.data) {
+=======
+      const response = await fetch(`https://pos.ztesting.site/backend/bill/${searchBillId}`);
+      
+      if (response.ok) {
+        const result = await response.json();
+        // Map API response to expected format
+>>>>>>> Stashed changes
         const mappedBill = {
           _id: result.data._id,
           billNo: result.data.billId,
@@ -151,13 +163,59 @@ const ReturnManagement = () => {
     setReturnItems(returnItems.filter(item => item._id !== _id));
   };
 
+<<<<<<< Updated upstream
+=======
+  const handleRestockItem = async (_id) => {
+    const item = returnItems.find(i => i._id === _id);
+    if (!item || item.returnQuantity === 0) {
+      alert('Please set return quantity first!');
+      return;
+    }
+
+    // API call for restocking
+    try {
+      const response = await fetch('https://pos.ztesting.site/backend/inventory/restock', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          productId: item.productId,
+          quantity: item.returnQuantity
+        })
+      });
+
+      if (response.ok) {
+        alert(`Successfully restocked ${item.returnQuantity} units of ${item.productName}`);
+        
+        // Remove returned quantity from the item
+        setReturnItems(returnItems.map(i => {
+          if (i._id === _id) {
+            return { ...i, maxQuantity: i.maxQuantity - i.returnQuantity, returnQuantity: 0 };
+          }
+          return i;
+        }));
+      } else {
+        alert('Failed to restock item!');
+      }
+    } catch (err) {
+      console.error('Restock error:', err);
+      alert('Failed to restock item!');
+    }
+  };
+
+>>>>>>> Stashed changes
   const calculateReturnTotal = () => {
     return returnItems.reduce((sum, item) => sum + (item.salePrice * item.returnQuantity), 0);
   };
 
+<<<<<<< Updated upstream
+=======
+   
+>>>>>>> Stashed changes
   const handleGenerateReturnReceipt = async () => {
     const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
-
+    
     if (itemsToReturn.length === 0) {
       alert('Please select items to return!');
       return;
@@ -210,6 +268,10 @@ const ReturnManagement = () => {
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
+<<<<<<< Updated upstream
+=======
+        
+>>>>>>> Stashed changes
       } else {
         alert('Failed to process return!');
       }
@@ -396,9 +458,13 @@ const ReturnManagement = () => {
       {/* Left Side - Available Bills */}
       <div className="return-left-section">
         <h2 className="section-title">
+<<<<<<< Updated upstream
+=======
+           
+>>>>>>> Stashed changes
           Return Management
         </h2>
-
+        
         <div className="search-section">
           <input
             type="text"
@@ -413,6 +479,11 @@ const ReturnManagement = () => {
           </button>
         </div>
 
+<<<<<<< Updated upstream
+=======
+        
+
+>>>>>>> Stashed changes
         {selectedBill && (
           <div className="selected-bill-info">
             <h3 className="subsection-title">Selected Bill Items</h3>
@@ -425,6 +496,19 @@ const ReturnManagement = () => {
         )}
 
         <div className="cashier-section">
+<<<<<<< Updated upstream
+=======
+          <div className="cashier-input-group">
+            <label>Staff ID:</label>
+            <input
+              type="text"
+              placeholder="Enter staff ID"
+              value={staffId}
+              onChange={(e) => setStaffId(e.target.value)}
+              className="cashier-input"
+            />
+          </div>
+>>>>>>> Stashed changes
           <div className="cashier-input-group">
             <label>Shift:</label>
             <select value={shift} onChange={(e) => setShift(e.target.value)} className="shift-select">
@@ -458,8 +542,8 @@ const ReturnManagement = () => {
                     <td>{item.productName}</td>
                     <td>
                       <div className="quantity-control">
-                        <button
-                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity - 1)}
+                        <button 
+                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity - 1)} 
                           className="btn-qty"
                           disabled={item.returnQuantity === 0}
                         >
@@ -473,8 +557,8 @@ const ReturnManagement = () => {
                           min="0"
                           max={item.maxQuantity}
                         />
-                        <button
-                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity + 1)}
+                        <button 
+                          onClick={() => updateReturnQuantity(item._id, item.returnQuantity + 1)} 
                           className="btn-qty"
                           disabled={item.returnQuantity >= item.maxQuantity}
                         >
@@ -485,8 +569,8 @@ const ReturnManagement = () => {
                     <td>Rs.{item.salePrice?.toFixed(2) || '0.00'}</td>
                     <td>Rs.{((item.salePrice || 0) * item.returnQuantity).toFixed(2)}</td>
                     <td>
-                      <button
-                        onClick={() => handleDeleteItem(item._id)}
+                      <button 
+                        onClick={() => handleDeleteItem(item._id)} 
                         className="btn-delete"
                         title="Remove from return list"
                       >
@@ -500,7 +584,7 @@ const ReturnManagement = () => {
           </table>
         </div>
 
-        <div className="recent-bills-section">
+         <div className="recent-bills-section">
           <h3 className="subsection-title">Recent Bills</h3>
           <div className="bills-table-container">
             <table className="bills-table">
@@ -525,7 +609,7 @@ const ReturnManagement = () => {
                   </tr>
                 ) : (
                   recentBills.map(bill => (
-                    <tr
+                    <tr 
                       key={bill._id}
                       className={selectedBill?._id === bill._id ? 'selected-row' : ''}
                     >
@@ -537,7 +621,7 @@ const ReturnManagement = () => {
                         <span className="payment-badge">{bill.paymentMode?.toUpperCase() || 'N/A'}</span>
                       </td>
                       <td>
-                        <button
+                        <button 
                           onClick={() => handleBillSelect(bill)}
                           className="btn-select-bill"
                         >
@@ -598,8 +682,8 @@ const ReturnManagement = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleGenerateReturnReceipt}
+        <button 
+          onClick={handleGenerateReturnReceipt} 
           className="btn-generate-return"
           disabled={!selectedBill || returnItems.filter(i => i.returnQuantity > 0).length === 0 || loading}
         >

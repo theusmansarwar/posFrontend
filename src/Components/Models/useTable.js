@@ -33,8 +33,7 @@ import AddStock from "./addStockM";
 import AddExpense from "./AddExpense";
 import AddNewStock from "./AddNewStock";
 import BillHistoryModal from "./BillHistoryModal";
-
-
+import Reports from "./AddReports";
 
 export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const { showAlert } = useAlert(); // Since you created a custom hook
@@ -56,10 +55,12 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [openNewStockModal, setOpenNewStockModal] = useState(false);
   const [openExpenseModal, setOpenExpenseModal] = useState(false);
   const [openBillModal, setOpenBillModal] = useState(false);
+  const [openReportsModal, setOpenReportsModal] = useState(false); // <- reports modal state
   const [modeltype, setModeltype] = useState("Add");
   const [modelData, setModelData] = useState({});
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
   useEffect(() => {
     fetchData();
   }, [page, rowsPerPage, debouncedSearch]);
@@ -82,11 +83,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
 
   const fetchData = async () => {
     let response;
-    setIsLoading(true)
+    setIsLoading(true);
 
     if (tableType === "Roles") {
       response = await fetchallroleslist(page, rowsPerPage, searchQuery);
-      if (response.status == 400) {
+      if (response.status === 400) {
         localStorage.removeItem("Token");
         navigate("/login");
         setIsLoading(false);
@@ -94,13 +95,10 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setIsLoading(false);
         setData(response.data);
         setTotalRecords(response.totalRoles);
-
       }
-    }
-
-    else if (tableType === "Users") {
+    } else if (tableType === "Users") {
       response = await fetchalluserlist(page, rowsPerPage, searchQuery);
-      if (response.status == 400) {
+      if (response.status === 400) {
         localStorage.removeItem("Token");
         navigate("/login");
         setIsLoading(false);
@@ -109,11 +107,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setData(response.users);
         setTotalRecords(response.totalUsers);
       }
-    }
-
-    else if (tableType === "Stock") {
+    } else if (tableType === "Stock") {
       response = await fetchallStocklist(page, rowsPerPage, searchQuery);
-      if (response.status == 400) {
+      if (response.status === 400) {
         localStorage.removeItem("Token");
         navigate("/login");
         setIsLoading(false);
@@ -122,10 +118,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setData(response.data);
         setTotalRecords(response.totalRecords);
       }
-    }
-    else if (tableType === "Expense") {
+    } else if (tableType === "Expense") {
       response = await fetchallExpenselist(page, rowsPerPage, searchQuery);
-      if (response.status == 400) {
+      if (response.status === 400) {
         localStorage.removeItem("Token");
         navigate("/login");
         setIsLoading(false);
@@ -134,10 +129,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setData(response.data);
         setTotalRecords(response.totalRecords);
       }
-    }
-    else if (tableType === "Bill History") {
+    } else if (tableType === "Bill History") {
       response = await fetchallBilllist(page, rowsPerPage, searchQuery);
-      if (response.status == 400) {
+      if (response.status === 400) {
         localStorage.removeItem("Token");
         navigate("/login");
         setIsLoading(false);
@@ -146,15 +140,54 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setData(response.data);
         setTotalRecords(response.totalRecords);
       }
+    } else if (tableType === "Reports") {
+      // Reports are stored in localStorage under 'posReports' by the POSReports component
+      try {
+        const saved = JSON.parse(localStorage.getItem("posReports") || "[]");
+        // filter by debouncedSearch (title, description, reportType, generatedBy)
+        const search = (debouncedSearch || "").trim().toLowerCase();
+        let filtered = saved;
+        if (search) {
+          filtered = saved.filter((r) => {
+            const title = (r.title || "").toString().toLowerCase();
+            const desc = (r.description || "").toString().toLowerCase();
+            const type = (r.reportType || "").toString().toLowerCase();
+            const gen = (r.generatedBy || "").toString().toLowerCase();
+            return (
+              title.includes(search) ||
+              desc.includes(search) ||
+              type.includes(search) ||
+              gen.includes(search)
+            );
+          });
+        }
+
+        // paginate results (API expects page 1-based)
+        const start = (page - 1) * rowsPerPage;
+        const paginated = filtered.slice(start, start + rowsPerPage);
+
+        setData(paginated);
+        setTotalRecords(filtered.length);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error reading reports from localStorage", err);
+        setData([]);
+        setTotalRecords(0);
+        setIsLoading(false);
+      }
+    } else {
+      // default fallback
+      setIsLoading(false);
+      setData([]);
+      setTotalRecords(0);
     }
   };
 
   const handleSelectAllClick = (event) => {
-    setSelected(event.target.checked ? data.map((row) => row._id) : []);
+    setSelected(event.target.checked ? data.map((row) => row._id || row.id || row.id) : []);
   };
 
   const isSelected = (id) => selected.includes(id);
-
 
   //  Fixed pagination handling
   const handleChangePage = (_, newPage) => {
@@ -171,44 +204,39 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
     setPage(1); // Always go to page 1 after changing rows per page
   };
 
-
   const handleviewClick = (category) => {
     if (tableType === "Roles") {
       setOpenRolesModal(true);
       setModelData(category);
       setModeltype("Update");
-    }
-    else if (tableType === "Users") {
+    } else if (tableType === "Users") {
       setOpenUserModal(true);
       setModelData(category);
       setModeltype("Update");
-    }
-
-
-    else if (tableType === "Stock") {
+    } else if (tableType === "Stock") {
       setOpenStockModal(true);
       setModelData(category);
       setModeltype("Update");
-    }
-    else if (tableType === "Expense") {
+    } else if (tableType === "Expense") {
       setOpenExpenseModal(true);
       setModelData(category);
       setModeltype("Update");
-    }
-    else if (tableType === "Bill History") {
+    } else if (tableType === "Bill History") {
       setOpenBillModal(true);
       setModelData(category);
       setModeltype("Update");
+    } else if (tableType === "Reports") {
+      setOpenReportsModal(true);
+      setModelData(category);
+      setModeltype("View"); // viewing a saved report
     }
-
   };
   const handleAddNew = (category) => {
     if (tableType === "Stock") {
       setOpenNewStockModal(true);
       setModelData(category);
     }
-  }
-
+  };
 
   const handleDelete = async () => {
     if (selected.length === 0) {
@@ -220,26 +248,31 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
 
       if (tableType === "Roles") {
         response = await deleteAllRoles({ ids: selected });
-      }
-      else if (tableType === "Users") {
+      } else if (tableType === "Users") {
         response = await deleteAllUsers({ ids: selected });
-      }
-
-      else if (tableType === "Stock") {
+      } else if (tableType === "Stock") {
         response = await deleteAllStock({ ids: selected });
-      }
-      else if (tableType === "Expense") {
+      } else if (tableType === "Expense") {
         response = await deleteAllExpense({ ids: selected });
-      }
-      else if (tableType === "Bill History") {
+      } else if (tableType === "Bill History") {
         response = await deleteAllBills({ ids: selected });
+      } else if (tableType === "Reports") {
+        // delete locally stored reports
+        const saved = JSON.parse(localStorage.getItem("posReports") || "[]");
+        const remaining = saved.filter((r) => !selected.includes(r.id));
+        localStorage.setItem("posReports", JSON.stringify(remaining));
+        showAlert("success", "Reports deleted successfully");
+        // refresh table & clear selection
+        fetchData();
+        setSelected([]);
+        return;
       }
 
-      if (response.status === 200) {
+      if (response && response.status === 200) {
         showAlert("success", response.message || "Deleted successfully");
         fetchData();
         setSelected([]);
-      } else {
+      } else if (response) {
         showAlert("error", response.message || "Failed to delete items");
       }
     } catch (error) {
@@ -253,22 +286,21 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setOpenRolesModal(true);
       setModeltype("Add");
       setModelData();
-    }
-    else if (tableType === "Users") {
+    } else if (tableType === "Users") {
       setOpenUserModal(true);
       setModeltype("Add");
       setModelData();
-    }
-
-
-    else if (tableType === "Stock") {
+    } else if (tableType === "Stock") {
       setOpenStockModal(true);
       setModeltype("Add");
       setModelData();
-    }
-
-    else if (tableType === "Expense") {
+    } else if (tableType === "Expense") {
       setOpenExpenseModal(true);
+      setModeltype("Add");
+      setModelData();
+    } else if (tableType === "Reports") {
+      // Open reports modal to add a new report (Reports component handles saving)
+      setOpenReportsModal(true);
       setModeltype("Add");
       setModelData();
     }
@@ -277,10 +309,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const getNestedValue = (obj, path) => {
     return path
       .split(".")
-      .reduce(
-        (acc, key) => (acc && acc[key] !== undefined ? acc[key] : "N/A"),
-        obj
-      );
+      .reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : "N/A"), obj);
   };
 
   const handleResponse = (response) => {
@@ -343,6 +372,16 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
           <BillHistoryModal
             open={openBillModal}
             setOpen={setOpenBillModal}
+            Modeldata={modelData}
+            onResponse={handleResponse}
+          />
+        )}
+
+        {openReportsModal && (
+          <Reports
+            open={openReportsModal}
+            setOpen={setOpenReportsModal}
+            Modeltype={modeltype}
             Modeldata={modelData}
             onResponse={handleResponse}
           />
@@ -417,7 +456,6 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   </Button>
                 )
               )}
-
             </Toolbar>
             <TableContainer>
               <Table stickyHeader>
@@ -450,7 +488,6 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                       },
                     }}
                   >
-
                     <TableCell padding="checkbox">
                       <Checkbox
                         sx={{
@@ -469,7 +506,6 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
 
                     <TableCell>Action</TableCell>
                     {tableType === "Stock" && <TableCell>Add New Stock</TableCell>}
-
                   </TableRow>
                 </TableHead>
 
@@ -519,9 +555,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                     </TableRow>
                   ) : (
                     data.map((row) => {
-                      const isItemSelected = isSelected(row._id);
+                      const isItemSelected = isSelected(row._id || row.id || row.id);
                       return (
-                        <TableRow key={row._id} selected={isItemSelected}>
+                        <TableRow key={row._id || row.id || row.id} selected={isItemSelected}>
                           {/* Checkbox column */}
                           <TableCell padding="checkbox">
                             <Checkbox
@@ -530,8 +566,8 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                               onChange={() => {
                                 setSelected((prev) =>
                                   isItemSelected
-                                    ? prev.filter((id) => id !== row._id)
-                                    : [...prev, row._id]
+                                    ? prev.filter((id) => id !== (row._id || row.id))
+                                    : [...prev, row._id || row.id]
                                 );
                               }}
                             />
@@ -670,13 +706,12 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                     })
                   )}
                 </TableBody>
-
               </Table>
             </TableContainer>
             <TablePagination
               rowsPerPageOptions={[5, 10, 25]}
               component="div"
-              count={totalRecords} //  Correct count from API
+              count={totalRecords} //  Correct count from API or localStorage
               rowsPerPage={rowsPerPage}
               page={page - 1} //  Convert to 0-based index for Material-UI
               onPageChange={handleChangePage}
@@ -687,5 +722,4 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       </>
     ),
   };
-};
-
+}

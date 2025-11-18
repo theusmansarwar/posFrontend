@@ -46,9 +46,9 @@ export default function AddRoles({
   );
 
   const [errors, setErrors] = React.useState({});
-
   const [id, setId] = React.useState(Modeldata?._id || "");
 
+  // <-- added "Reports" here
   const allModules = [
     "Dashboard",
     "Users",
@@ -58,6 +58,7 @@ export default function AddRoles({
     "Billing",
     "Returns",
     "Bill History",
+    "Reports",
   ];
 
   React.useEffect(() => {
@@ -88,25 +89,18 @@ export default function AddRoles({
       status,
     };
     try {
-      // ✅ Console log
       console.log("🔹 Role Form Data:", roleData);
 
       let response;
       if (Modeltype === "Add") {
-        // console.log("📌 Adding new role...");
         response = await createRole(roleData);
       } else {
-        console.log("📌 Updating role with ID:", id);
         response = await updateRole(id, roleData);
       }
-
-      // ✅ Alert show karna
-      // alert(`${Modeltype} Role Successfully!\n\nDetails:\n${JSON.stringify(roleData, null, 2)}`);
 
       if (response?.status === 201 || response?.status === 200) {
         onResponse({ messageType: "success", message: response.message });
 
-        // ✅ Clear all form fields
         setName("");
         setDescription("");
         setModules([]);
@@ -114,10 +108,8 @@ export default function AddRoles({
         setId("");
         setErrors({});
 
-        // ✅ Close modal
         setOpen(false);
       } else if (response?.status === 400 && response?.missingFields) {
-        //  API validation errors
         const fieldErrors = {};
         response.missingFields.forEach((f) => {
           fieldErrors[f.name] = f.message;
@@ -133,8 +125,6 @@ export default function AddRoles({
         message: err.response?.data?.message || "Server error",
       });
     }
-
-    // setOpen(false);
   };
 
   return (
@@ -145,7 +135,6 @@ export default function AddRoles({
         </Typography>
 
         <form onSubmit={handleSubmit}>
-          {/* Role Name + Description */}
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             <TextField
               fullWidth
@@ -165,7 +154,6 @@ export default function AddRoles({
             />
           </Box>
 
-          {/* Modules */}
           <Typography variant="subtitle1" mt={3}>
             Assign Modules:
           </Typography>
@@ -185,7 +173,6 @@ export default function AddRoles({
             ))}
           </FormGroup>
 
-          {/* Status */}
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             <FormControl fullWidth>
               <InputLabel id="status-select-label">Status</InputLabel>
@@ -196,8 +183,9 @@ export default function AddRoles({
                 onChange={(e) => setStatus(e.target.value)}
                 label="Status"
               >
-                <MenuItem value="true">Active</MenuItem>
-                <MenuItem value="false">Inactive</MenuItem>
+                {/* use boolean values */}
+                <MenuItem value={true}>Active</MenuItem>
+                <MenuItem value={false}>Inactive</MenuItem>
               </Select>
             </FormControl>
             {errors.modules && (
@@ -207,7 +195,6 @@ export default function AddRoles({
             )}
           </Box>
 
-          {/* Buttons */}
           <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
             <Button
               variant="outlined"
@@ -226,7 +213,7 @@ export default function AddRoles({
                 textTransform: "none",
               }}
             >
-             {id ? "Update Role" : "Add Role"}
+              {id ? "Update Role" : "Add Role"}
             </Button>
           </Box>
         </form>
