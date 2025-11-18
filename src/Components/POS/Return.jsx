@@ -155,74 +155,7 @@ const ReturnManagement = () => {
     return returnItems.reduce((sum, item) => sum + (item.salePrice * item.returnQuantity), 0);
   };
 
- 
-  //   const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
-
-  //   if (itemsToReturn.length === 0) {
-  //     alert('Please select items to return!');
-  //     return;
-  //   }
-
-  //   if (!staffId.trim()) {
-  //     alert('Please enter staff ID!');
-  //     return;
-  //   }
-
-  //   if (!returnReason.trim()) {
-  //     alert('Please enter return reason!');
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-
-  //     const returnData = {
-  //       billId: selectedBill.billNo,
-  //       isDeleted: false,
-  //       items: itemsToReturn.map(item => ({
-  //         productId: item.productId?._id || item.productId,
-  //         productName: item.productName,
-  //         quantity: item.returnQuantity,
-  //         salePrice: item.salePrice,
-  //         total: item.salePrice * item.returnQuantity
-  //       })),
-  //       returnReason,
-  //       refundMode,
-  //       staffId,
-  //       shift
-  //     };
-
-  //     const result = await updateBill(selectedBill.billNo, returnData); 
-
-  //     if (result) {
-  //       const returnReceipt = {
-  //         returnNo: `RET-${Date.now()}`,
-  //         originalBillNo: selectedBill.billNo,
-  //         originalBillDate: selectedBill.date,
-  //         returnDate: new Date().toLocaleString(),
-  //         items: itemsToReturn,
-  //         returnTotal: calculateReturnTotal(),
-  //         refundMode,
-  //         returnReason,
-  //         staffId,
-  //         shift
-  //       };
-
-  //       setReturnReceiptData(returnReceipt);
-  //       setShowReturnReceipt(true);
-  //     } else {
-  //       alert('Failed to process return!');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error processing return:', error);
-  //     alert(`Failed to process return: ${error.message || 'Unknown error'}`);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleGenerateReturnReceipt = async () => {
-  
     const itemsToReturn = returnItems.filter(item => item.returnQuantity > 0);
 
     if (itemsToReturn.length === 0) {
@@ -242,49 +175,33 @@ const ReturnManagement = () => {
 
     try {
       setLoading(true);
- 
-      const remainingItemsForBill = returnItems.map(item => {
-        const remainingQty = item.maxQuantity - item.returnQuantity;
-        
-     
-        if (remainingQty > 0) {
-          return {
-            productId: item.productId?._id || item.productId,
-            productName: item.productName,
-            quantity: remainingQty, 
-            salePrice: item.salePrice,
-            total: item.salePrice * remainingQty  
-          };
-        }
-        return null; 
-      }).filter(Boolean);  
-
- 
-      const newBillTotal = remainingItemsForBill.reduce((acc, curr) => acc + curr.total, 0);
 
       const returnData = {
         billId: selectedBill.billNo,
-        isDeleted: remainingItemsForBill.length === 0, 
-        items: remainingItemsForBill,  
-        totalAmount: newBillTotal, 
+        isDeleted: false,
+        items: itemsToReturn.map(item => ({
+          productId: item.productId?._id || item.productId,
+          productName: item.productName,
+          quantity: item.returnQuantity,
+          salePrice: item.salePrice,
+          total: item.salePrice * item.returnQuantity
+        })),
         returnReason,
         refundMode,
         staffId,
         shift
       };
 
-      // 3. API Call to Update Bill
-      const result = await updateBill(selectedBill.billNo, returnData);
+      const result = await updateBill(selectedBill.billNo, returnData); 
 
       if (result) {
-         
         const returnReceipt = {
           returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
           originalBillDate: selectedBill.date,
           returnDate: new Date().toLocaleString(),
-          items: itemsToReturn, 
-          returnTotal: calculateReturnTotal(),  
+          items: itemsToReturn,
+          returnTotal: calculateReturnTotal(),
           refundMode,
           returnReason,
           staffId,
@@ -293,9 +210,6 @@ const ReturnManagement = () => {
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
-        
-        // Optional: Refresh Bills list automatically
-        loadBills(); 
       } else {
         alert('Failed to process return!');
       }
@@ -658,7 +572,7 @@ const ReturnManagement = () => {
           </div>
 
           <div className="summary-row total-row">
-            <span>Refund Amount:</span>
+            <span>Total Amount:</span>
             <span>Rs.{calculateReturnTotal().toFixed(2)}</span>
           </div>
 
