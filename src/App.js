@@ -24,6 +24,7 @@ import { Tooltip } from "@mui/material";
 import ExpenseM from "./Pages/Expense/Expense";
 import BillHistory from "./Pages/BillHistory/BillHistory";
 import Reports from "./Components/Models/AddReports"
+import SalesReport from "./Pages/SalesReport/SalesReport";
 const App = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,7 +43,8 @@ const App = ({ onLogout }) => {
     { id: 6, name: "Billing", route: "/billData", icon: <FaMoneyBillWave />, module: "Billing" },
     { id: 7, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" },
     { id: 8, name: "Bill History", route: "/bill-history", icon: <FaReceipt />  , module: "Bill History" },
-    { id: 9, name: "Reports", route: "/reports", icon: <FaReceipt />, module: "Reports" }
+    { id: 9, name: "Reports", route: "/reports", icon: <FaReceipt />, module: "Reports" },
+    { id: 10, name: "Sales Report", route: "/salesReport", icon: <FaReceipt />, module: "Sales Report" }
   ];
 
   // ✅ Get user modules from localStorage on component mount
@@ -241,6 +243,10 @@ const App = ({ onLogout }) => {
           <Route
             path="/reports"
             element={hasAccess("/bill-history") ? <Reports /> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
+          />
+          <Route
+            path="/salesReport"
+            element={hasAccess("/salesReport") ? <SalesReport/> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
           
           

@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist, fetchallBilllist } from "../../DAL/fetch";
+import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist, fetchallBilllist, fetchSaleslist } from "../../DAL/fetch";
 import { formatDate } from "../../Utils/Formatedate";
 import truncateText from "../../truncateText";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +33,7 @@ import AddStock from "./addStockM";
 import AddExpense from "./AddExpense";
 import AddNewStock from "./AddNewStock";
 import BillHistoryModal from "./BillHistoryModal";
+import SalesReportModal from "./SalesReportModal";
 import Reports from "./AddReports";
 
 export function useTable({ attributes, tableType, limitPerPage = 10 }) {
@@ -56,6 +57,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [openExpenseModal, setOpenExpenseModal] = useState(false);
   const [openBillModal, setOpenBillModal] = useState(false);
   const [openReportsModal, setOpenReportsModal] = useState(false); // <- reports modal state
+  const [openSalesReportModal, setOpenSalesReportModal] = useState(false);
   const [modeltype, setModeltype] = useState("Add");
   const [modelData, setModelData] = useState({});
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -127,7 +129,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       } else {
         setIsLoading(false);
         setData(response.data);
-        setTotalRecords(response.totalRecords);
+        setTotalRecords(response.totalExpense);
       }
     } else if (tableType === "Bill History") {
       response = await fetchallBilllist(page, rowsPerPage, searchQuery);
@@ -175,7 +177,19 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(0);
         setIsLoading(false);
       }
-    } else {
+    }else if (tableType === "Sales Report") {
+      response = await fetchSaleslist(page, rowsPerPage, searchQuery);
+      if (response.status === 400) {
+        localStorage.removeItem("Token");
+        navigate("/login");
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
+        setData(response.data);
+        setTotalRecords(response.totalRecords);
+      } 
+    }
+    else {
       // default fallback
       setIsLoading(false);
       setData([]);
@@ -230,6 +244,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setModelData(category);
       setModeltype("View"); // viewing a saved report
     }
+    else if (tableType === "Sales Report") {
+      setOpenSalesReportModal(true);
+      setModelData(category);
+      setModeltype("Update");  
+    }
   };
   const handleAddNew = (category) => {
     if (tableType === "Stock") {
@@ -266,6 +285,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         fetchData();
         setSelected([]);
         return;
+      }
+      else if (tableType === "Sales Report") {
+        response = await deleteAllExpense({ ids: selected });
       }
 
       if (response && response.status === 200) {
@@ -304,6 +326,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setModeltype("Add");
       setModelData();
     }
+    // else if (tableType === "Sales Report") {
+    //   setOpenSalesReportModal(true);
+    //   setModeltype("Add");
+    //   setModelData();
+    // }
   };
 
   const getNestedValue = (obj, path) => {
@@ -377,7 +404,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
           />
         )}
 
-        {openReportsModal && (
+        {openReportsModal   && (
           <Reports
             open={openReportsModal}
             setOpen={setOpenReportsModal}
@@ -386,6 +413,14 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
             onResponse={handleResponse}
           />
         )}
+
+        {openSalesReportModal  && (
+        <SalesReportModal
+          open={openSalesReportModal}
+          setOpen={setOpenSalesReportModal}
+          Modeldata={modelData}  
+        />
+      )}
 
         <DeleteModal
           open={openDeleteModal}
@@ -441,7 +476,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   <DeleteIcon />
                 </IconButton>
               ) : (
-                tableType !== "CategoriesNames" && tableType !== "Bill History" && (
+                tableType !== "CategoriesNames" && tableType !== "Bill History" && tableType !== "Sales Report" &&(
                   <Button
                     sx={{
                       background: "var(--horizontal-gradient)",
@@ -586,6 +621,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                                 attr.id === "reportedDate" ||
                                 attr.id === "expiryDate" ||
                                 attr.id === "currentDate" ||
+                                attr.id === "lastSoldAt"||
                                 attr.id === "warrantyDate" ? (
                                 formatDate(row[attr.id])
                               ) : attr.id === "published" ? (
