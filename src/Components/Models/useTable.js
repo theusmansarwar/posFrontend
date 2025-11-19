@@ -20,11 +20,11 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist, fetchallBilllist, fetchSaleslist } from "../../DAL/fetch";
+import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist, fetchallBilllist, fetchSaleslist, fetchPendingAmount } from "../../DAL/fetch";
 import { formatDate } from "../../Utils/Formatedate";
 import truncateText from "../../truncateText";
 import { useNavigate } from "react-router-dom";
-import { deleteAllRoles, deleteAllStock, deleteAllUsers, deleteAllExpense, deleteAllBills } from "../../DAL/delete";
+import { deleteAllRoles, deleteAllStock, deleteAllUsers, deleteAllExpense, deleteAllBills, deleteAllPendingAmount } from "../../DAL/delete";
 import { useAlert } from "../Alert/AlertContext";
 import DeleteModal from "./confirmDeleteModel";
 import AddUsers from "./addUsers";
@@ -35,6 +35,8 @@ import AddNewStock from "./AddNewStock";
 import BillHistoryModal from "./BillHistoryModal";
 import SalesReportModal from "./SalesReportModal";
 import Reports from "./AddReports";
+import PendingAmountPage from "../../Pages/Pending Amount/PendingAmountPage";
+import AddPendingAmount from "./AddPendingAmount";
 
 export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const { showAlert } = useAlert(); // Since you created a custom hook
@@ -58,6 +60,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [openBillModal, setOpenBillModal] = useState(false);
   const [openReportsModal, setOpenReportsModal] = useState(false); // <- reports modal state
   const [openSalesReportModal, setOpenSalesReportModal] = useState(false);
+  const [openPendingAmountModal, setOpenPendingAmountModal] = useState(false);
   const [modeltype, setModeltype] = useState("Add");
   const [modelData, setModelData] = useState({});
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -189,6 +192,18 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(response.totalRecords);
       } 
     }
+      else if (tableType === "PendingAmount") {
+      response = await fetchPendingAmount(page, rowsPerPage, searchQuery);
+      if (response.status === 400) {
+        localStorage.removeItem("Token");
+        navigate("/login");
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
+        setData(response.data);
+        setTotalRecords(response.totalRecords);
+      } 
+    }
     else {
       // default fallback
       setIsLoading(false);
@@ -249,6 +264,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setModelData(category);
       setModeltype("Update");  
     }
+     else if (tableType === "PendingAmount") {
+      setOpenPendingAmountModal(true);
+      setModelData(category);
+      setModeltype("Update");  
+    }
   };
   const handleAddNew = (category) => {
     if (tableType === "Stock") {
@@ -289,6 +309,10 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       else if (tableType === "Sales Report") {
         response = await deleteAllExpense({ ids: selected });
       }
+        else if (tableType === "PendingAmount") {
+        response = await deleteAllPendingAmount({ ids: selected });
+      }
+
 
       if (response && response.status === 200) {
         showAlert("success", response.message || "Deleted successfully");
@@ -418,7 +442,16 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         <SalesReportModal
           open={openSalesReportModal}
           setOpen={setOpenSalesReportModal}
+          Modeldata={modelData} 
+           onResponse={handleResponse} 
+        />
+      )}
+      {openPendingAmountModal  && (
+        <AddPendingAmount
+          open={openPendingAmountModal}
+          setOpen={setOpenPendingAmountModal}
           Modeldata={modelData}  
+           onResponse={handleResponse}
         />
       )}
 

@@ -1,0 +1,76 @@
+.dashboard0{
+    box-shadow: 0 0 10px rgb(27, 27, 85);
+    border-radius: 12px;
+}
+.box{
+    height: 50px;
+    width: calc(100% - 40px);
+    padding: 20px;
+    background-color: white; 
+    border-top-left-radius: 12px;
+   border-top-right-radius: 12px;
+}
+.sale{
+    font-size: 24px;
+    color: rgb(9, 9, 77);
+    display: flex;
+    justify-content: space-between;
+}
+.export{
+    padding: 8px 14px ;
+    border-radius: 8px;
+    background-color: lightgray;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.saleSummary{
+    color: gray;
+    margin-top: 10px;
+    font-size: 16px;
+}
+.box1{
+  height: fit-content;
+  width: calc(100% - 40px);
+  background-color: white;
+  display: flex;
+  justify-content: space-around;
+   gap: 20px;
+   padding: 20px;
+   border-bottom-left-radius: 12px;
+   border-bottom-right-radius: 12px;
+  margin-bottom: 40px;
+}
+.box-1{
+   height: 200px;
+   width: 20%;
+   background-color: pink; 
+   border-radius: 8px;
+   display: flex;
+   flex-direction: column;
+}
+.boxData{
+    margin-left: 20px;
+    margin-top: 20px;
+}
+
+.icon0{
+    font-size: 40px;
+    border-radius: 50%;
+    height: 60px;
+    width: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.value{
+    font-size: 20px;
+    font-weight: 600;
+    margin-top: 10px;
+}
+.title{
+    font-size: 20px;
+    margin-top: 10px;
+}

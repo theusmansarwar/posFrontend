@@ -59,7 +59,8 @@ export default function AddRoles({
     "Returns",
     "Bill History",
     "Reports",
-    "Sales Report"
+    "Sales Report",
+    "Pending Amount"
   ];
 
   React.useEffect(() => {

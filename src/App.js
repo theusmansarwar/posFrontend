@@ -25,6 +25,8 @@ import ExpenseM from "./Pages/Expense/Expense";
 import BillHistory from "./Pages/BillHistory/BillHistory";
 import Reports from "./Components/Models/AddReports"
 import SalesReport from "./Pages/SalesReport/SalesReport";
+import PendingAmountPage from "./Pages/Pending Amount/PendingAmountPage";
+
 const App = ({ onLogout }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,7 +46,8 @@ const App = ({ onLogout }) => {
     { id: 7, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" },
     { id: 8, name: "Bill History", route: "/bill-history", icon: <FaReceipt />  , module: "Bill History" },
     { id: 9, name: "Reports", route: "/reports", icon: <FaReceipt />, module: "Reports" },
-    { id: 10, name: "Sales Report", route: "/salesReport", icon: <FaReceipt />, module: "Sales Report" }
+    { id: 10, name: "Sales Report", route: "/salesReport", icon: <FaReceipt />, module: "Sales Report" },
+    { id: 11, name: "Pending Amount", route: "/PendingAmount", icon: <FaReceipt />, module: "Pending Amount" }
   ];
 
   // ✅ Get user modules from localStorage on component mount
@@ -248,7 +251,12 @@ const App = ({ onLogout }) => {
             path="/salesReport"
             element={hasAccess("/salesReport") ? <SalesReport/> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
-          
+        <Route
+           path="/PendingAmount"
+           element={hasAccess("/PendingAmount") ? <PendingAmountPage/> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
+          />
+
+       
           
 
           {/* ✅ Default redirect to first available module */}
