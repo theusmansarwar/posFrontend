@@ -71,7 +71,7 @@ export const updateReport = async (billNo, returnData) => {
 
 export const updatePendingAmount = async (billNo, returnData) => {
   const reqObj = {
-    path: `/bill/pendingAmount/${billNo}`,
+    path: `/bill/pending/${billNo}`,
     method: "PUT",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("Token")}`,

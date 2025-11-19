@@ -72,7 +72,7 @@ export default function AddPendingPayModal({
     try {
       const response = await updatePendingAmount(billId, payload);
 
-      if (response?.status === 200) {
+      if (response?.status == 200) {
         onResponse({
           messageType: "success",
           message: "Payment updated successfully",
