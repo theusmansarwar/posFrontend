@@ -19,9 +19,8 @@ import {
   DialogContentText,
   Snackbar,
   Alert,
-  Tooltip // NEW: Added for better UX on icons
+  Tooltip 
 } from "@mui/material";
-// NEW: Imported Icons
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -39,10 +38,8 @@ import {
 
 const reportTypes = ["Stock", "Bills", "Expenses"];
 
-// Fields to exclude from table display
 const excludeFields = ['_id', 'id', '__v', 'password', 'token', 'createdAt', 'updatedAt', '__typename'];
 
-// Specific field configurations for each report type
 const reportFieldConfig = {
   Stock: [
     { key: 'productId', label: 'Product ID', paths: ['productId', 'id'] },
@@ -237,8 +234,6 @@ const POSReports = () => {
   const [apiLoading, setApiLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [viewingReport, setViewingReport] = useState(null);
-
-  // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState({ 
     open: false, 
     reportId: null, 
@@ -246,7 +241,6 @@ const POSReports = () => {
   });
   const [deleting, setDeleting] = useState(false);
 
-  // NEW: Edit Dialog State
   const [editDialog, setEditDialog] = useState({
     open: false,
     reportId: null,
@@ -390,7 +384,6 @@ const POSReports = () => {
     setViewingReport(null);
   };
 
-  // --- DELETE LOGIC ---
   const handleDeleteClick = (e, report) => {
     e.stopPropagation();
     setDeleteDialog({
@@ -415,7 +408,6 @@ const POSReports = () => {
     }
   };
 
-  // --- NEW: EDIT LOGIC ---
   const handleEditClick = (e, report) => {
     e.stopPropagation();
     setEditDialog({
@@ -458,13 +450,12 @@ const POSReports = () => {
              return;
         }
 
-        // 1. SET ORIENTATION TO LANDSCAPE (Fixes the width issue)
         const doc = new jsPDF({ orientation: "landscape" });
         const pageWidth = doc.internal.pageSize.width;
         
     
         doc.setFontSize(22);
-        doc.setTextColor(40, 40, 40); // Dark Grey
+        doc.setTextColor(40, 40, 40); 
         doc.text("Ibrahim Autos & Wholesale", pageWidth / 2, 15, { align: 'center' });
         
         // Report Meta Data
@@ -480,12 +471,10 @@ const POSReports = () => {
         doc.text(`Generated: ${dateStr}`, pageWidth - 14, 25, { align: 'right' });
         doc.text(`Type: ${report.reportType} | By: ${report.generatedBy}`, 14, 30);
 
-        // Divider Line
         doc.setLineWidth(0.5);
         doc.setDrawColor(200, 200, 200);
         doc.line(14, 33, pageWidth - 14, 33);
 
-        // Description (if exists)
         let startY = 40;
         if (report.description) {
             doc.setFontSize(9);
@@ -494,8 +483,6 @@ const POSReports = () => {
             doc.text(splitDesc, 14, 38);
             startY = 38 + (splitDesc.length * 4) + 5;
         }
-
-        // --- TABLE SECTION ---
 
         const { headers, rows } = cleanDataForDisplay(report.data, report.reportType);
         
@@ -510,32 +497,29 @@ const POSReports = () => {
             return rowData;
         });
 
-        // Define specific column styles based on Report Type
         let customColumnStyles = {};
-        
-        // Logic to right-align currency and date columns
+
         headers.forEach((header, index) => {
-            const colIndex = index + 1; // +1 because of the "#" column
+            const colIndex = index + 1; 
             
             if (header.type === 'currency') {
                 customColumnStyles[colIndex] = { halign: 'right' };
             } else if (header.key === 'date' || header.key === 'createdAt') {
-                customColumnStyles[colIndex] = { cellWidth: 25, halign: 'center' }; // Fixed width for date to prevent wrapping
+                customColumnStyles[colIndex] = { cellWidth: 25, halign: 'center' }; 
             } else if (header.key === 'billId' || header.key === 'status') {
                 customColumnStyles[colIndex] = { halign: 'center' };
             }
         });
 
-        // # Column Style
         customColumnStyles[0] = { cellWidth: 12, halign: 'center', fontStyle: 'bold' };
 
         autoTable(doc, {
             startY: startY,
             head: [tableColumn],
             body: tableRows,
-            theme: 'grid', // Grid looks cleaner for data-heavy reports
+            theme: 'grid', 
             headStyles: { 
-                fillColor: [41, 128, 185], // Professional Blue
+                fillColor: [41, 128, 185], 
                 textColor: 255, 
                 fontSize: 9,
                 fontStyle: 'bold',
@@ -543,18 +527,17 @@ const POSReports = () => {
                 valign: 'middle'
             },
             bodyStyles: { 
-                fontSize: 8, // Smaller font to fit more columns
+                fontSize: 8, 
                 cellPadding: 3,
                 textColor: 50,
-                valign: 'middle' // Vertically center text
+                valign: 'middle' 
             },
             alternateRowStyles: {
-                fillColor: [245, 245, 245] // Very light grey
+                fillColor: [245, 245, 245] 
             },
             columnStyles: customColumnStyles,
             margin: { top: 15, bottom: 15, left: 14, right: 14 },
-            
-            // Footer
+
             didDrawPage: function (data) {
                 const str = 'Page ' + doc.internal.getNumberOfPages();
                 doc.setFontSize(8);
@@ -643,8 +626,7 @@ const POSReports = () => {
 
   return (
     <Box sx={{ maxWidth: 1400, margin: "0 auto", p: 4 }}>
-      
-      {/* Delete Confirmation Dialog */}
+
       <Dialog open={deleteDialog.open} onClose={() => setDeleteDialog({...deleteDialog, open: false})} maxWidth="xs" fullWidth>
         <DialogTitle>Delete Report?</DialogTitle>
         <DialogContent>
@@ -660,7 +642,6 @@ const POSReports = () => {
         </DialogActions>
       </Dialog>
 
-      {/* NEW: Edit Report Dialog */}
       <Dialog open={editDialog.open} onClose={() => setEditDialog({...editDialog, open: false})} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Report Details</DialogTitle>
         <DialogContent>
@@ -690,7 +671,6 @@ const POSReports = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Viewing Report Modal */}
       {viewingReport && (
         <>
           <Paper elevation={3} sx={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "90%", maxWidth: 1200, maxHeight: "90vh", overflow: "auto", zIndex: 1300, p: 4 }}>
@@ -719,13 +699,11 @@ const POSReports = () => {
         </>
       )}
 
-      {/* Header */}
       <Box mb={4}>
         <Typography variant="h4" fontWeight={600} gutterBottom>Generate Reports</Typography>
         <Typography variant="body2" color="text.secondary">Select a report type and generate detailed reports for your records</Typography>
       </Box>
 
-      {/* Report Type Selection */}
       <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
         <Box display="flex" gap={2} alignItems="flex-end">
           <TextField select label="Report Type" value={reportType} onChange={(e) => setReportType(e.target.value)} sx={{ flex: 1 }} variant="outlined">
@@ -739,7 +717,6 @@ const POSReports = () => {
         </Box>
       </Paper>
 
-      {/* Form and Preview */}
       {showForm && (
         <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
           <Typography variant="h6" fontWeight={600} mb={3}>Report Details</Typography>
@@ -761,7 +738,6 @@ const POSReports = () => {
         </Paper>
       )}
 
-      {/* Saved Reports */}
       <Box>
         <Typography variant="h5" fontWeight={600} mb={3}>Saved Reports</Typography>
         {savedReports.length === 0 ? (
@@ -785,8 +761,7 @@ const POSReports = () => {
                       </Typography>
                     </Box>
                     <Box display="flex" alignItems="center" gap={1}>
-                      {/* UPDATED: Action Buttons Container */}
-                      
+                
                       <Tooltip title="Download PDF">
                         <IconButton onClick={(e) => handleDownloadPDF(e, r)} sx={{ color: "success.main", border: "1px solid", borderColor: "success.main", "&:hover": { backgroundColor: "success.light", color: "white" } }}>
                             <DownloadIcon fontSize="small" />
