@@ -1,0 +1,258 @@
+ 
+.bill-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.bill-modal-container {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-close-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-close-modal:hover {
+    background: #f3f4f6;
+}
+
+.bill-receipt {
+    padding: 30px 25px;
+}
+
+.receipt-header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 15px;
+}
+
+.company-logo {
+    width: 70px;
+    height: 70px;
+    object-fit: contain;
+    margin-bottom: 10px;
+}
+
+.receipt-header h2 {
+    margin: 0 0 10px 0;
+    color: #1e3a8a;
+    font-size: 22px;
+}
+
+.receipt-header p {
+    margin: 4px 0;
+    font-size: 12px;
+}
+
+.receipt-info {
+    margin-bottom: 20px;
+    font-size: 12px;
+}
+
+.receipt-info p {
+    margin: 4px 0;
+}
+
+.Bill-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.Cashier-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    gap: 10px;
+}
+
+.customer-info-section {
+    border-top: 1px dashed #ccc;
+    padding-top: 5px;
+    margin-top: 5px;
+}
+
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    border: 1px solid #e5e7eb;
+}
+
+.receipt-table th,
+.receipt-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 12px;
+}
+
+.receipt-table th {
+    background: #f3f4f6;
+    border-bottom: 2px solid #1e3a8a;
+}
+
+.receipt-table tbody tr {
+    background: white;
+}
+
+ 
+
+.empty-row {
+    background: white !important;
+    text-align: center;
+    color: #6b7280;
+}
+
+.receipt-summary {
+    border-top: 2px solid #1e3a8a;
+    padding-top: 15px;
+}
+
+.summary-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-line:last-child {
+    border-bottom: none;
+}
+
+.summary-line.total {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 2px solid #e5e7eb;
+}
+
+.savings-highlight {
+    color: #059669;
+    font-weight: 600;
+    background: #d1fae5;
+    padding: 8px;
+    border-radius: 3px;
+    margin: 5px 0;
+}
+
+.labor-highlight {
+    color: #0369a1;
+    font-weight: 600;
+    background: #e0f2fe;
+    padding: 8px;
+    border-radius: 3px;
+    margin: 5px 0;
+}
+
+.receipt-footer {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 2px solid #1e3a8a;
+}
+
+.receipt-footer p {
+    margin: 4px 0;
+    font-size: 12px;
+}
+
+.watermark {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #d1d5db;
+}
+
+.watermark p {
+    margin: 2px 0;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.watermark strong {
+    color: #1e3a8a;
+    font-size: 12px;
+}
+
+.phone-contact {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.phone-icon {
+    font-size: 10px;
+}
+
+.bill-actions {
+    display: flex;
+    gap: 10px;
+    padding: 15px 25px;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.btn-action {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+}
+
+.btn-print {
+    background: #1e3a8a;
+}
+
+.btn-print:hover {
+    background: #1e40af;
+}
+
+.btn-download {
+    background: #059669;
+}
+
+.btn-download:hover {
+    background: #047857;
+}
