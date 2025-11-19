@@ -6,7 +6,6 @@ import logoo from "../../Assets/logoo.jpg";
 
 // Import API functions from DAL
 import { fetchallBilllist, searchBillById } from "../../DAL/fetch";
-
 import { updateBill } from "../../DAL/edit";
 
 const ReturnManagement = () => {
@@ -40,11 +39,14 @@ const ReturnManagement = () => {
       }
     }
 
-    // Load initial bills
     loadBills();
   }, []);
 
-  // ✅ Single function for both fetch and search
+  const calculateBillTotal = (items, discount = 0, labourCost = 0) => {
+    const subtotal = items.reduce((sum, item) => sum + (item.total || item.salePrice * item.quantity), 0);
+    return subtotal - discount + labourCost;
+  };
+
   const loadBills = async (searchKeyword = "") => {
     try {
       setLoading(true);
@@ -56,8 +58,17 @@ const ReturnManagement = () => {
             billNo: bill.billId,
             date: new Date(bill.createdAt).toLocaleString(),
             items: bill.items,
-            total: bill.totalAmount,
+            totalAmount: bill.totalAmount || calculateBillTotal(bill.items, bill.discount, bill.labourCost),
             paymentMode: bill.paymentMode,
+            customerName: bill.customerName || "N/A",
+            customerPhone: bill.customerPhone || "N/A",
+            discount: bill.discount || 0,
+            discountType: bill.discountType || "amount",
+            discountValue: bill.discountValue || 0,
+            labourCost: bill.labourCost || 0,
+            userPaidAmount: bill.userPaidAmount || 0,
+            remainingAmount: bill.remainingAmount || 0,
+            change: bill.change || 0,
           }))
         : response.map((bill) => ({
             _id: bill._id,
@@ -66,8 +77,17 @@ const ReturnManagement = () => {
               ? new Date(bill.createdAt).toLocaleString()
               : bill.date,
             items: bill.items,
-            total: bill.totalAmount || bill.total,
+            totalAmount: bill.totalAmount || bill.total,
             paymentMode: bill.paymentMode,
+            customerName: bill.customerName || "N/A",
+            customerPhone: bill.customerPhone || "N/A",
+            discount: bill.discount || 0,
+            discountType: bill.discountType || "amount",
+            discountValue: bill.discountValue || 0,
+            labourCost: bill.labourCost || 0,
+            userPaidAmount: bill.userPaidAmount || 0,
+            remainingAmount: bill.remainingAmount || 0,
+            change: bill.change || 0,
           }));
       setRecentBills(mappedBills);
     } catch (error) {
@@ -77,44 +97,46 @@ const ReturnManagement = () => {
     }
   };
 
-  // ✅ Search handler - uses same function
   const handleSearchBill = async () => {
     if (!searchBillId.trim()) {
-      // If search is empty, load all bills
       loadBills();
       return;
     }
-
-    // Search bills by keyword
     await loadBills(searchBillId);
   };
 
-  // ✅ Real-time search as user types (optional)
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       loadBills(searchBillId);
-    }, 300); // Wait 300ms after user stops typing
-
+    }, 300);
     return () => clearTimeout(delayDebounce);
   }, [searchBillId]);
 
   const handleBillSelect = async (bill) => {
-    // If we need full bill details, fetch by ID
     try {
       setLoading(true);
       const result = await searchBillById(bill.billNo);
 
       if (result && result.data) {
+        const billData = result.data;
         const mappedBill = {
-          _id: result.data._id,
-          billNo: result.data.billId,
-          date: new Date(result.data.createdAt).toLocaleString(),
-          items: result.data.items,
-          total: result.data.totalAmount,
-          paymentMode: result.data.paymentMode,
-          discount: result.data.discount,
-          staffId: result.data.staff?.name || "N/A",
-          shift: result.data.shift,
+          _id: billData._id,
+          billNo: billData.billId,
+          date: new Date(billData.createdAt).toLocaleString(),
+          items: billData.items,
+          totalAmount: billData.totalAmount || calculateBillTotal(billData.items, billData.discount, billData.labourCost),
+          paymentMode: billData.paymentMode,
+          customerName: billData.customerName || "N/A",
+          customerPhone: billData.customerPhone || "N/A",
+          discount: billData.discount || 0,
+          discountType: billData.discountType || "amount",
+          discountValue: billData.discountValue || 0,
+          labourCost: billData.labourCost || 0,
+          userPaidAmount: billData.userPaidAmount || 0,
+          remainingAmount: billData.remainingAmount || 0,
+          change: billData.change || 0,
+          staffName: billData.staff?.name || "N/A",
+          shift: billData.shift,
         };
         setSelectedBill(mappedBill);
 
@@ -122,6 +144,10 @@ const ReturnManagement = () => {
           ...item,
           returnQuantity: item.quantity,
           maxQuantity: item.quantity,
+          productId: item.productId?._id || item.productId,
+          productName: item.productName || item.productId?.productName,
+          productCode: item.productCode,
+          salePrice: item.salePrice,
         }));
         setReturnItems(itemsWithReturnQty);
       }
@@ -156,15 +182,26 @@ const ReturnManagement = () => {
     setReturnItems(returnItems.filter((item) => item._id !== _id));
   };
 
-  const calculateReturnTotal = () => {
+  const calculateReturnSubtotal = () => {
     return returnItems.reduce(
       (sum, item) => sum + item.salePrice * item.returnQuantity,
       0
     );
   };
 
+  const calculateReturnTotal = () => {
+    const returnSubtotal = calculateReturnSubtotal();
+    const originalSubtotal = selectedBill?.totalAmount - selectedBill?.labourCost + selectedBill?.discount || returnSubtotal;
+    const discountProportion = originalSubtotal > 0 ? (returnSubtotal / originalSubtotal) : 0;
+    const laborProportion = originalSubtotal > 0 ? (returnSubtotal / originalSubtotal) : 0;
+    
+    const proportionalDiscount = selectedBill?.discount * discountProportion || 0;
+    const proportionalLabor = selectedBill?.labourCost * laborProportion || 0;
+    
+    return returnSubtotal - proportionalDiscount + proportionalLabor;
+  };
+
   const handleGenerateReturnReceipt = async () => {
-    // 1. Validation: Check if user actually selected a return quantity
     const hasReturnItems = returnItems.some((item) => item.returnQuantity > 0);
 
     if (!hasReturnItems) {
@@ -185,75 +222,83 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
 
-      // ============================================================
-      // 🛑 FIX IS HERE: CALCULATE NEW BILL STATE
-      // ============================================================
-
-      // We map through ALL items (returnItems contains the full bill list)
       const updatedBillItems = returnItems
         .map((item) => {
-          // Formula: Original Qty - Return Qty = New Bill Qty
           const remainingQty = item.maxQuantity - item.returnQuantity;
-
           return {
-            // Ensure we keep the Product ID structure correct
-            productId: item.productId?._id || item.productId,
+            productId: item.productId,
             productName: item.productName,
-            productCode: item.productCode, // Keep the code
-
-            // ⚠️ CRITICAL: Send the REMAINING quantity, not the return quantity
+            productCode: item.productCode,
             quantity: remainingQty,
-
             salePrice: item.salePrice,
-            // Recalculate the total for this line item
             total: item.salePrice * remainingQty,
           };
         })
-        // Only keep items that still have quantity > 0.
-        // If remainingQty is 0 (customer returned everything), it removes the item from bill.
         .filter((item) => item.quantity > 0);
 
-      // 2. Prepare Payload for Backend (The "New Bill State")
+      const newSubtotal = updatedBillItems.reduce((sum, item) => sum + item.total, 0);
+      const originalSubtotal = selectedBill.totalAmount - selectedBill.labourCost + selectedBill.discount;
+      const remainingRatio = originalSubtotal > 0 ? (newSubtotal / originalSubtotal) : 0;
+      
+      const newDiscount = selectedBill.discount * remainingRatio;
+      const newLabourCost = selectedBill.labourCost * remainingRatio;
+      const newTotalAmount = newSubtotal - newDiscount + newLabourCost;
+      
+      const returnAmount = calculateReturnTotal();
+      const newUserPaidAmount = Math.max(0, selectedBill.userPaidAmount - returnAmount);
+      const newRemainingAmount = Math.max(0, newTotalAmount - newUserPaidAmount);
+      const newChange = Math.max(0, newUserPaidAmount - newTotalAmount);
+
       const billUpdatePayload = {
-        items: updatedBillItems, // This is the list of what the customer KEEPS
+        items: updatedBillItems,
+        discount: parseFloat(newDiscount.toFixed(2)),
+        discountType: selectedBill.discountType,
+        discountValue: selectedBill.discountValue * remainingRatio,
+        labourCost: parseFloat(newLabourCost.toFixed(2)),
+        totalAmount: parseFloat(newTotalAmount.toFixed(2)),
+        userPaidAmount: parseFloat(newUserPaidAmount.toFixed(2)),
+        remainingAmount: parseFloat(newRemainingAmount.toFixed(2)),
+        change: parseFloat(newChange.toFixed(2)),
         returnReason: returnReason,
         staffId: staffId,
         shift: shift,
-        // Recalculate main bill totals if your backend doesn't do it automatically
-        // usually backend handles totalAmount, but we ensure items are correct here
       };
 
-      // 3. Call API
       const result = await updateBill(selectedBill.billNo, billUpdatePayload);
 
       if (result) {
-        // ============================================================
-        // 🖨️ RECEIPT LOGIC (This remains distinct)
-        // ============================================================
-
-        // For the Receipt, we ONLY want to show what was Returned
-        const itemsOnlyReturned = returnItems.filter(
-          (item) => item.returnQuantity > 0
-        );
+        const itemsOnlyReturned = returnItems
+          .filter((item) => item.returnQuantity > 0)
+          .map((item) => ({
+            ...item,
+            total: item.salePrice * item.returnQuantity,
+          }));
 
         const returnReceipt = {
           returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
           originalBillDate: selectedBill.date,
           returnDate: new Date().toLocaleString(),
-          items: itemsOnlyReturned, // Receipt shows Returns
-          returnTotal: calculateReturnTotal(), // Money to give back
+          items: itemsOnlyReturned,
+          returnSubtotal: calculateReturnSubtotal(),
+          returnTotal: calculateReturnTotal(),
           refundMode,
           returnReason,
-          staffId,
+          staffId: selectedBill.staffName || staffId,
           shift,
+          customerName: selectedBill.customerName,
+          customerPhone: selectedBill.customerPhone,
+          discount: selectedBill.discount * (calculateReturnSubtotal() / (selectedBill.totalAmount - selectedBill.labourCost + selectedBill.discount)),
+          laborCost: selectedBill.labourCost * (calculateReturnSubtotal() / (selectedBill.totalAmount - selectedBill.labourCost + selectedBill.discount)),
         };
 
         setReturnReceiptData(returnReceipt);
         setShowReturnReceipt(true);
 
-        // Optional: Refresh the list to see updated quantities
-        // loadBills();
+        setSelectedBill(null);
+        setReturnItems([]);
+        setReturnReason("");
+        loadBills();
       } else {
         alert("Failed to process return!");
       }
@@ -264,6 +309,7 @@ const ReturnManagement = () => {
       setLoading(false);
     }
   };
+
   const handlePrint = () => {
     const printWindow = window.open("", "", "width=800,height=600");
     printWindow.document.write(`
@@ -283,12 +329,12 @@ const ReturnManagement = () => {
           .receipt-header {
             text-align: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #334eac;;
+            border-bottom: 2px solid #1e3a8a;
             padding-bottom: 15px;
           }
           .receipt-header h2 {
             margin: 0 0 10px 0;
-            color: #334eac;
+            color: #1e3a8a;
             font-size: 22px;
           }
           .receipt-header p {
@@ -296,7 +342,7 @@ const ReturnManagement = () => {
             font-size: 12px;
           }
           .return-badge {
-            background: #334eac;;
+            background: #dc2626;
             color: white;
             padding: 8px 16px;
             border-radius: 3px;
@@ -323,6 +369,11 @@ const ReturnManagement = () => {
             justify-content: space-between;
             margin-bottom: 8px;
           }
+          .customer-info-section {
+            border-top: 1px dashed #ccc;
+            padding-top: 5px;
+            margin-top: 5px;
+          }
           table { 
             width: 100%; 
             border-collapse: collapse; 
@@ -337,10 +388,16 @@ const ReturnManagement = () => {
           }
           th {
             background: #f3f4f6;
-            border-bottom: 2px solid #334eac;;
+            border-bottom: 2px solid #1e3a8a;
+          }
+          tbody tr {
+            background: #fee2e2;
+          }
+          tbody tr:nth-child(even) {
+            background: #fecaca;
           }
           .receipt-summary {
-            border-top: 2px solid #334eac;;
+            border-top: 2px solid #1e3a8a;
             padding-top: 15px;
           }
           .summary-line {
@@ -348,24 +405,44 @@ const ReturnManagement = () => {
             justify-content: space-between;
             padding: 6px 0;
             font-size: 13px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          .summary-line:last-child {
+            border-bottom: none;
           }
           .summary-line.total {
             font-size: 17px;
             font-weight: 700;
-            color: #334eac;;
+            color: #dc2626;
             margin-top: 10px;
             padding-top: 10px;
             border-top: 2px solid #e5e7eb;
           }
+          .discount-highlight {
+            color: #059669;
+            font-weight: 600;
+            background: #d1fae5;
+            padding: 8px;
+            border-radius: 3px;
+            margin: 5px 0;
+          }
+          .labor-highlight {
+            color: #0369a1;
+            font-weight: 600;
+            background: #e0f2fe;
+            padding: 8px;
+            border-radius: 3px;
+            margin: 5px 0;
+          }
           .return-reason-box {
-            background: #f2f6feff;
-            border: 1px solid #cad7feff;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
             padding: 12px;
             border-radius: 3px;
             margin: 15px 0;
           }
           .return-reason-box strong {
-            color: #334eac;;
+            color: #dc2626;
             display: block;
             margin-bottom: 5px;
           }
@@ -373,7 +450,7 @@ const ReturnManagement = () => {
             text-align: center;
             margin-top: 20px;
             padding-top: 15px;
-            border-top: 2px solid #334eac;
+            border-top: 2px solid #1e3a8a;
           }
           .receipt-footer p {
             margin: 4px 0;
@@ -390,7 +467,7 @@ const ReturnManagement = () => {
             color: #9ca3af;
           }
           .watermark strong {
-            color: #334eac;
+            color: #1e3a8a;
             font-size: 12px;
           }
           .company-logo {
@@ -441,7 +518,6 @@ const ReturnManagement = () => {
 
   return (
     <div className="return-container">
-      {/* Left Side - Available Bills */}
       <div className="return-left-section">
         <h2 className="section-title">Return Management</h2>
 
@@ -465,18 +541,14 @@ const ReturnManagement = () => {
 
         {selectedBill && (
           <div className="selected-bill-info">
-            <h3 className="subsection-title">Selected Bill Items</h3>
+            <h3 className="subsection-title">Selected Bill Details</h3>
             <div className="bill-details-box">
-              <p>
-                <strong>Bill No:</strong> {selectedBill.billNo}
-              </p>
-              <p>
-                <strong>Date:</strong> {selectedBill.date}
-              </p>
-              <p>
-                <strong>Original Total:</strong> Rs.
-                {selectedBill.total?.toFixed(2) || "0.00"}
-              </p>
+              <p><strong>Bill No:</strong> {selectedBill.billNo}</p>
+              <p><strong>Date:</strong> {selectedBill.date}</p>
+              <p><strong>Customer:</strong> {selectedBill.customerName}</p>
+              <p><strong>Phone:</strong> {selectedBill.customerPhone}</p>
+              <p><strong>Original Total:</strong> Rs. {selectedBill.totalAmount?.toFixed(2) || "0.00"}</p>
+              <p><strong>Payment Mode:</strong> {selectedBill.paymentMode?.toUpperCase()}</p>
             </div>
           </div>
         )}
@@ -560,10 +632,9 @@ const ReturnManagement = () => {
                         </button>
                       </div>
                     </td>
-                    <td>Rs.{item.salePrice?.toFixed(2) || "0.00"}</td>
+                    <td>Rs. {item.salePrice?.toFixed(2) || "0.00"}</td>
                     <td>
-                      Rs.
-                      {((item.salePrice || 0) * item.returnQuantity).toFixed(2)}
+                      Rs. {((item.salePrice || 0) * item.returnQuantity).toFixed(2)}
                     </td>
                     <td>
                       <button
@@ -589,9 +660,9 @@ const ReturnManagement = () => {
                 <tr>
                   <th>Bill No</th>
                   <th>Date</th>
+                  <th>Customer</th>
                   <th>Items</th>
                   <th>Total</th>
-                  <th>Payment</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -618,16 +689,12 @@ const ReturnManagement = () => {
                     >
                       <td className="bill-number-cell">{bill.billNo}</td>
                       <td className="bill-date-cell">{bill.date}</td>
+                      <td>{bill.customerName}</td>
                       <td className="bill-items-cell">
                         {bill.items?.length || 0}
                       </td>
                       <td className="bill-total-cell">
-                        Rs.{bill.total?.toFixed(2) || "0.00"}
-                      </td>
-                      <td>
-                        <span className="payment-badge">
-                          {bill.paymentMode?.toUpperCase() || "N/A"}
-                        </span>
+                        Rs. {bill.totalAmount?.toFixed(2) || "0.00"}
                       </td>
                       <td>
                         <button
@@ -646,7 +713,6 @@ const ReturnManagement = () => {
         </div>
       </div>
 
-      {/* Right Side - Return Processing */}
       <div className="return-right-section">
         <h1 className="return-title">Process Return</h1>
 
@@ -668,9 +734,14 @@ const ReturnManagement = () => {
             </span>
           </div>
 
+          <div className="summary-row">
+            <span>Return Subtotal:</span>
+            <span>Rs. {calculateReturnSubtotal().toFixed(2)}</span>
+          </div>
+
           <div className="summary-row total-row">
-            <span>Total Amount:</span>
-            <span>Rs.{calculateReturnTotal().toFixed(2)}</span>
+            <span>Total Refund:</span>
+            <span>Rs. {calculateReturnTotal().toFixed(2)}</span>
           </div>
 
           <div className="return-reason-section">
@@ -693,8 +764,7 @@ const ReturnManagement = () => {
             >
               <option value="cash">Cash</option>
               <option value="card">Card</option>
-              <option value="upi">UPI</option>
-              <option value="wallet">Wallet</option>
+              <option value="online">Online</option>
             </select>
           </div>
         </div>
@@ -712,7 +782,6 @@ const ReturnManagement = () => {
         </button>
       </div>
 
-      {/* Return Receipt Modal */}
       {showReturnReceipt && returnReceiptData && (
         <div className="receipt-popup-overlay">
           <div className="receipt-popup-container">
@@ -745,8 +814,6 @@ const ReturnManagement = () => {
                     <strong>Original Bill:</strong>{" "}
                     {returnReceiptData.originalBillNo}
                   </p>
-                </div>
-                <div className="Cashier-info">
                   <p>
                     <strong>Bill Date:</strong>{" "}
                     {returnReceiptData.originalBillDate}
@@ -754,7 +821,7 @@ const ReturnManagement = () => {
                 </div>
                 <div className="Cashier-info">
                   <p>
-                    <strong>Staff ID:</strong> {returnReceiptData.staffId}
+                    <strong>Staff:</strong> {returnReceiptData.staffId}
                   </p>
                   <p>
                     <strong>Shift:</strong>{" "}
@@ -764,6 +831,14 @@ const ReturnManagement = () => {
                   <p>
                     <strong>Refund:</strong>{" "}
                     {returnReceiptData.refundMode.toUpperCase()}
+                  </p>
+                </div>
+                <div className="customer-info-section">
+                  <p>
+                    <strong>Customer:</strong> {returnReceiptData.customerName}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {returnReceiptData.customerPhone}
                   </p>
                 </div>
               </div>
@@ -782,12 +857,9 @@ const ReturnManagement = () => {
                     <tr key={item._id}>
                       <td>{item.productName}</td>
                       <td>{item.returnQuantity}</td>
-                      <td>Rs.{item.salePrice?.toFixed(2) || "0.00"}</td>
+                      <td>Rs. {item.salePrice?.toFixed(2) || "0.00"}</td>
                       <td>
-                        Rs.
-                        {((item.salePrice || 0) * item.returnQuantity).toFixed(
-                          2
-                        )}
+                        Rs. {item.total?.toFixed(2) || "0.00"}
                       </td>
                     </tr>
                   ))}
@@ -795,9 +867,28 @@ const ReturnManagement = () => {
               </table>
 
               <div className="receipt-summary">
+                <div className="summary-line">
+                  <span>Return Subtotal:</span>
+                  <span>Rs. {returnReceiptData.returnSubtotal.toFixed(2)}</span>
+                </div>
+                
+                {returnReceiptData.discount > 0 && (
+                  <div className="summary-line discount-highlight">
+                    <span>Discount Deducted:</span>
+                    <span>-Rs. {returnReceiptData.discount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {returnReceiptData.laborCost > 0 && (
+                  <div className="summary-line labor-highlight">
+                    <span>Labor Cost Added:</span>
+                    <span>+Rs. {returnReceiptData.laborCost.toFixed(2)}</span>
+                  </div>
+                )}
+                
                 <div className="summary-line total">
                   <span>Total Refund:</span>
-                  <span>Rs.{returnReceiptData.returnTotal.toFixed(2)}</span>
+                  <span>Rs. {returnReceiptData.returnTotal.toFixed(2)}</span>
                 </div>
               </div>
 
