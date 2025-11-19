@@ -78,6 +78,7 @@ body {
 .App {
   display: flex;
   height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
 }
 p, h1, h2, h3, h4, h5, h6{
   padding: 0%;
@@ -119,6 +120,7 @@ font-size: 12px;
 }
 
 .app-side-bar {
+  background-color: white;
   width: 17%;
   height: 94vh;
   margin: 3vh 1%;

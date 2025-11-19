@@ -8,8 +8,10 @@ import { GrUserWorker } from "react-icons/gr";
 import "./Dashboard.css";
 import { fetchDashboard } from "../../DAL/fetch";
 import { exportDashboardPDF } from "../../Utils/ExportPdf";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +71,7 @@ const Dashboard = () => {
 
         {/* Summary Cards */}
         <div className="summary-cards-grid">
-          <div className="dashboard-card card-blue">
+          <div className="dashboard-card card-blue" onClick={() => { navigate("/stockData") }}>
             <div className="card-header">
               <Package size={24} />
               <span>Total Products</span>
@@ -82,7 +84,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="dashboard-card card-emerald">
+          <div className="dashboard-card card-emerald" onClick={() => { navigate("/salesReport") }}>
             <div className="card-header">
               <TrendingUp size={24} />
               <span>Total Sold</span>
@@ -95,7 +97,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="dashboard-card card-amber">
+          <div className="dashboard-card card-amber" onClick={() => { navigate("/PendingAmount") }}>
             <div className="card-header">
               <GiTakeMyMoney size={24} />
               <span>Pending Amount</span>
@@ -106,9 +108,9 @@ const Dashboard = () => {
             <div className="card-subvalue">To be collected</div>
           </div>
 
-          <div className="dashboard-card card-red">
+          <div className="dashboard-card card-red" onClick={() => { navigate("/ExpenseData") }}>
             <div className="card-header">
-              <TrendingUp size={24} />
+             <GiMoneyStack size={24} />
               <span>Total Expense</span>
             </div>
             <div className="card-value">
@@ -155,7 +157,7 @@ const Dashboard = () => {
             </div>
             {/* /////////////////// Labour Cost Overview //////////////////// */}
             <div className="section-header labour">
-              <Package size={24} />
+              <GrUserWorker size={24} />
               <div>
                 <h2>Labour Cost Overview</h2>
                 <p>Track and monitor labour cost</p>

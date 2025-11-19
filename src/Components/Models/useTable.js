@@ -509,7 +509,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   <DeleteIcon />
                 </IconButton>
               ) : (
-                tableType !== "CategoriesNames" && tableType !== "Bill History" && tableType !== "Sales Report" &&(
+                tableType !== "CategoriesNames" && tableType !== "Bill History" && tableType !== "Sales Report" &&tableType !== "PendingAmount" &&(
                   <Button
                     sx={{
                       background: "var(--horizontal-gradient)",

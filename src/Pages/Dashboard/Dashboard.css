@@ -32,15 +32,10 @@
 /* Main Container */
 .dashboard-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 1.5rem;
+  /* background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); */
+ 
 }
 
-@media (min-width: 768px) {
-  .dashboard-container {
-    padding: 2rem;
-  }
-}
 
 .dashboard-wrapper {
   max-width: 80rem;

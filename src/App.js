@@ -11,6 +11,12 @@ import {
   FaUserShield,
   FaReceipt
 } from "react-icons/fa";
+import { BiSolidReport } from "react-icons/bi";
+import { BsGraphUpArrow } from "react-icons/bs";
+import { GiMoneyStack } from "react-icons/gi";
+import { RiBillFill } from "react-icons/ri";
+import { GiTakeMyMoney } from "react-icons/gi";
+
 import "./App.css";
 
 import Dashboard from "./Pages/Dashboard/Dashboard";
@@ -41,13 +47,13 @@ const App = ({ onLogout }) => {
     { id: 2, name: "Roles", route: "/rolesData", icon: <FaUserShield />, module: "Roles" },
     { id: 3, name: "Users", route: "/usersData", icon: <FaUsers />, module: "Users" },
     { id: 4, name: "Stock Management", route: "/stockData", icon: <FaWarehouse />, module: "Stock Management" },
-    { id: 5, name: "Expense", route: "/ExpenseData", icon: <FaReceipt />, module: "Expense" },
+    { id: 5, name: "Expense", route: "/ExpenseData", icon: <GiMoneyStack />, module: "Expense" },
     { id: 6, name: "Billing", route: "/billData", icon: <FaMoneyBillWave />, module: "Billing" },
     { id: 7, name: "Returns", route: "/ReturnData", icon: <IoIosReturnLeft />, module: "Returns" },
-    { id: 8, name: "Bill History", route: "/bill-history", icon: <FaReceipt />  , module: "Bill History" },
-    { id: 9, name: "Reports", route: "/reports", icon: <FaReceipt />, module: "Reports" },
-    { id: 10, name: "Sales Report", route: "/salesReport", icon: <FaReceipt />, module: "Sales Report" },
-    { id: 11, name: "Pending Amount", route: "/PendingAmount", icon: <FaReceipt />, module: "Pending Amount" }
+    { id: 8, name: "Bill History", route: "/bill-history", icon: <RiBillFill />  , module: "Bill History" },
+    { id: 9, name: "Reports", route: "/reports", icon: <BiSolidReport />, module: "Reports" },
+    { id: 10, name: "Sales Report", route: "/salesReport", icon: <BsGraphUpArrow />, module: "Sales Report" },
+    { id: 11, name: "Pending Amount", route: "/PendingAmount", icon: <GiTakeMyMoney />, module: "Pending Amount" }
   ];
 
   // ✅ Get user modules from localStorage on component mount
