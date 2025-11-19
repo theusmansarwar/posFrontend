@@ -38,14 +38,8 @@ const ReturnManagement = () => {
         console.error("Error parsing user data:", error);
       }
     }
-
     loadBills();
   }, []);
-
-  const calculateBillTotal = (items, discount = 0, labourCost = 0) => {
-    const subtotal = items.reduce((sum, item) => sum + (item.total || item.salePrice * item.quantity), 0);
-    return subtotal - discount + labourCost;
-  };
 
   const loadBills = async (searchKeyword = "") => {
     try {
@@ -58,7 +52,7 @@ const ReturnManagement = () => {
             billNo: bill.billId,
             date: new Date(bill.createdAt).toLocaleString(),
             items: bill.items,
-            totalAmount: bill.totalAmount || calculateBillTotal(bill.items, bill.discount, bill.labourCost),
+            totalAmount: bill.totalAmount || 0,
             paymentMode: bill.paymentMode,
             customerName: bill.customerName || "N/A",
             customerPhone: bill.customerPhone || "N/A",
@@ -70,25 +64,7 @@ const ReturnManagement = () => {
             remainingAmount: bill.remainingAmount || 0,
             change: bill.change || 0,
           }))
-        : response.map((bill) => ({
-            _id: bill._id,
-            billNo: bill.billId || bill.billNo,
-            date: bill.createdAt
-              ? new Date(bill.createdAt).toLocaleString()
-              : bill.date,
-            items: bill.items,
-            totalAmount: bill.totalAmount || bill.total,
-            paymentMode: bill.paymentMode,
-            customerName: bill.customerName || "N/A",
-            customerPhone: bill.customerPhone || "N/A",
-            discount: bill.discount || 0,
-            discountType: bill.discountType || "amount",
-            discountValue: bill.discountValue || 0,
-            labourCost: bill.labourCost || 0,
-            userPaidAmount: bill.userPaidAmount || 0,
-            remainingAmount: bill.remainingAmount || 0,
-            change: bill.change || 0,
-          }));
+        : [];
       setRecentBills(mappedBills);
     } catch (error) {
       console.error("Error fetching bills:", error);
@@ -124,10 +100,10 @@ const ReturnManagement = () => {
           billNo: billData.billId,
           date: new Date(billData.createdAt).toLocaleString(),
           items: billData.items,
-          totalAmount: billData.totalAmount || calculateBillTotal(billData.items, billData.discount, billData.labourCost),
+          totalAmount: billData.totalAmount || 0,
           paymentMode: billData.paymentMode,
-          customerName: billData.customerName || "N/A",
-          customerPhone: billData.customerPhone || "N/A",
+          customerName: billData.customerName || "",
+          customerPhone: billData.customerPhone || "",
           discount: billData.discount || 0,
           discountType: billData.discountType || "amount",
           discountValue: billData.discountValue || 0,
@@ -136,13 +112,16 @@ const ReturnManagement = () => {
           remainingAmount: billData.remainingAmount || 0,
           change: billData.change || 0,
           staffName: billData.staff?.name || "N/A",
-          shift: billData.shift,
+          shift: billData.shift || "morning",
         };
         setSelectedBill(mappedBill);
 
+        // Auto-populate shift from bill
+        setShift(mappedBill.shift);
+
         const itemsWithReturnQty = mappedBill.items.map((item) => ({
           ...item,
-          returnQuantity: item.quantity,
+          returnQuantity: 0, // Start with 0, user will select what to return
           maxQuantity: item.quantity,
           productId: item.productId?._id || item.productId,
           productName: item.productName || item.productId?.productName,
@@ -182,6 +161,7 @@ const ReturnManagement = () => {
     setReturnItems(returnItems.filter((item) => item._id !== _id));
   };
 
+  // Calculate return subtotal (sum of all returned items)
   const calculateReturnSubtotal = () => {
     return returnItems.reduce(
       (sum, item) => sum + item.salePrice * item.returnQuantity,
@@ -189,16 +169,53 @@ const ReturnManagement = () => {
     );
   };
 
-  const calculateReturnTotal = () => {
-    const returnSubtotal = calculateReturnSubtotal();
-    const originalSubtotal = selectedBill?.totalAmount - selectedBill?.labourCost + selectedBill?.discount || returnSubtotal;
-    const discountProportion = originalSubtotal > 0 ? (returnSubtotal / originalSubtotal) : 0;
-    const laborProportion = originalSubtotal > 0 ? (returnSubtotal / originalSubtotal) : 0;
+  // Calculate original bill subtotal (before discount and labor)
+  const calculateOriginalSubtotal = () => {
+    if (!selectedBill) return 0;
+    return selectedBill.totalAmount + selectedBill.discount - selectedBill.labourCost;
+  };
+
+  // Calculate proportional discount for returned items
+  const calculateReturnDiscount = () => {
+    if (!selectedBill || selectedBill.discount === 0) return 0;
     
-    const proportionalDiscount = selectedBill?.discount * discountProportion || 0;
-    const proportionalLabor = selectedBill?.labourCost * laborProportion || 0;
+    const returnSub = calculateReturnSubtotal();
+    const originalSub = calculateOriginalSubtotal();
     
-    return returnSubtotal - proportionalDiscount + proportionalLabor;
+    if (originalSub === 0) return 0;
+    
+    // Calculate proportion of items being returned
+    const returnProportion = returnSub / originalSub;
+    
+    // Return proportional discount
+    return selectedBill.discount * returnProportion;
+  };
+
+  // Calculate refund amount (what customer gets back)
+  // Formula: Return Subtotal - Proportional Discount (Labor stays with business)
+  const calculateRefundAmount = () => {
+    const returnSub = calculateReturnSubtotal();
+    const returnDiscount = calculateReturnDiscount();
+    return returnSub - returnDiscount;
+  };
+
+  // Calculate new total amount for remaining items (what goes to backend)
+  const calculateNewTotalAmount = () => {
+    if (!selectedBill) return 0;
+    
+    // Calculate subtotal of remaining items
+    const remainingSubtotal = returnItems.reduce(
+      (sum, item) => sum + item.salePrice * (item.maxQuantity - item.returnQuantity),
+      0
+    );
+    
+    // Calculate remaining discount proportion
+    const originalSub = calculateOriginalSubtotal();
+    const remainingProportion = originalSub > 0 ? remainingSubtotal / originalSub : 0;
+    const remainingDiscount = selectedBill.discount * remainingProportion;
+    
+    // New total = Remaining Subtotal - Remaining Discount + Labor (labor stays as is)
+    return remainingSubtotal - remainingDiscount + selectedBill.labourCost;
   };
 
   const handleGenerateReturnReceipt = async () => {
@@ -206,11 +223,6 @@ const ReturnManagement = () => {
 
     if (!hasReturnItems) {
       alert("Please select items to return!");
-      return;
-    }
-
-    if (!staffId.trim()) {
-      alert("Please enter staff ID!");
       return;
     }
 
@@ -222,6 +234,7 @@ const ReturnManagement = () => {
     try {
       setLoading(true);
 
+      // Calculate remaining items (what customer keeps)
       const updatedBillItems = returnItems
         .map((item) => {
           const remainingQty = item.maxQuantity - item.returnQuantity;
@@ -236,37 +249,56 @@ const ReturnManagement = () => {
         })
         .filter((item) => item.quantity > 0);
 
-      const newSubtotal = updatedBillItems.reduce((sum, item) => sum + item.total, 0);
-      const originalSubtotal = selectedBill.totalAmount - selectedBill.labourCost + selectedBill.discount;
-      const remainingRatio = originalSubtotal > 0 ? (newSubtotal / originalSubtotal) : 0;
+      // Calculate new bill values
+      const remainingSubtotal = updatedBillItems.reduce((sum, item) => sum + item.total, 0);
+      const originalSub = calculateOriginalSubtotal();
+      const remainingRatio = originalSub > 0 ? remainingSubtotal / originalSub : 0;
       
+      // Calculate new discount (proportional to remaining items)
       const newDiscount = selectedBill.discount * remainingRatio;
-      const newLabourCost = selectedBill.labourCost * remainingRatio;
-      const newTotalAmount = newSubtotal - newDiscount + newLabourCost;
       
-      const returnAmount = calculateReturnTotal();
-      const newUserPaidAmount = Math.max(0, selectedBill.userPaidAmount - returnAmount);
+      // Calculate new discount value
+      let newDiscountValue = selectedBill.discountValue;
+      if (selectedBill.discountType === "amount") {
+        newDiscountValue = selectedBill.discountValue * remainingRatio;
+      }
+      // If percentage, keep the same percentage
+      
+      // Labor cost stays the same (as per requirement)
+      const newLabourCost = selectedBill.labourCost;
+      
+      // Calculate new total amount
+      const newTotalAmount = remainingSubtotal - newDiscount + newLabourCost;
+      
+      // Calculate refund amount
+      const refundAmount = calculateRefundAmount();
+      
+      // Update payment details
+      const newUserPaidAmount = Math.max(0, selectedBill.userPaidAmount - refundAmount);
       const newRemainingAmount = Math.max(0, newTotalAmount - newUserPaidAmount);
-      const newChange = Math.max(0, newUserPaidAmount - newTotalAmount);
+      const newChange = newUserPaidAmount > newTotalAmount ? newUserPaidAmount - newTotalAmount : 0;
 
       const billUpdatePayload = {
         items: updatedBillItems,
         discount: parseFloat(newDiscount.toFixed(2)),
         discountType: selectedBill.discountType,
-        discountValue: selectedBill.discountValue * remainingRatio,
+        discountValue: parseFloat(newDiscountValue.toFixed(2)),
         labourCost: parseFloat(newLabourCost.toFixed(2)),
         totalAmount: parseFloat(newTotalAmount.toFixed(2)),
         userPaidAmount: parseFloat(newUserPaidAmount.toFixed(2)),
         remainingAmount: parseFloat(newRemainingAmount.toFixed(2)),
         change: parseFloat(newChange.toFixed(2)),
         returnReason: returnReason,
-        staffId: staffId,
+        staff: staffId,
         shift: shift,
       };
 
       const result = await updateBill(selectedBill.billNo, billUpdatePayload);
 
       if (result) {
+        // Use response data from API
+        const responseData = result.data || result;
+        
         const itemsOnlyReturned = returnItems
           .filter((item) => item.returnQuantity > 0)
           .map((item) => ({
@@ -274,22 +306,39 @@ const ReturnManagement = () => {
             total: item.salePrice * item.returnQuantity,
           }));
 
+        // Calculate values from response
+        const returnSub = calculateReturnSubtotal();
+        const returnDisc = calculateReturnDiscount();
+        const refundAmt = calculateRefundAmount();
+
         const returnReceipt = {
           returnNo: `RET-${Date.now()}`,
           originalBillNo: selectedBill.billNo,
           originalBillDate: selectedBill.date,
           returnDate: new Date().toLocaleString(),
           items: itemsOnlyReturned,
-          returnSubtotal: calculateReturnSubtotal(),
-          returnTotal: calculateReturnTotal(),
+          returnSubtotal: returnSub,
+          returnDiscount: returnDisc,
+          refundAmount: refundAmt,
+          // Use totalAmount from API response
+          totalAmount: responseData.totalAmount || calculateNewTotalAmount(),
+          // Use updated payment details from API response
+          userPaidAmount: responseData.userPaidAmount || newUserPaidAmount,
+          remainingAmount: responseData.remainingAmount || newRemainingAmount,
+          change: responseData.change || newChange,
+          // Use discount from API response
+          discount: responseData.discount || newDiscount,
+          discountType: responseData.discountType || selectedBill.discountType,
+          discountValue: responseData.discountValue || newDiscountValue,
+          // Use labor cost from API response
+          labourCost: responseData.labourCost || selectedBill.labourCost,
           refundMode,
-          returnReason,
-          staffId: selectedBill.staffName || staffId,
-          shift,
-          customerName: selectedBill.customerName,
-          customerPhone: selectedBill.customerPhone,
-          discount: selectedBill.discount * (calculateReturnSubtotal() / (selectedBill.totalAmount - selectedBill.labourCost + selectedBill.discount)),
-          laborCost: selectedBill.labourCost * (calculateReturnSubtotal() / (selectedBill.totalAmount - selectedBill.labourCost + selectedBill.discount)),
+          returnReason: responseData.returnReason || returnReason,
+          staffId: responseData.staff?.name || selectedBill.staffName || staffId,
+          shift: responseData.shift || shift,
+          customerName: responseData.customerName || selectedBill.customerName,
+          customerPhone: responseData.customerPhone || selectedBill.customerPhone,
+          paymentMode: responseData.paymentMode || selectedBill.paymentMode,
         };
 
         setReturnReceiptData(returnReceipt);
@@ -418,7 +467,7 @@ const ReturnManagement = () => {
             padding-top: 10px;
             border-top: 2px solid #e5e7eb;
           }
-          .discount-highlight {
+          .savings-highlight {
             color: #059669;
             font-weight: 600;
             background: #d1fae5;
@@ -547,8 +596,14 @@ const ReturnManagement = () => {
               <p><strong>Date:</strong> {selectedBill.date}</p>
               <p><strong>Customer:</strong> {selectedBill.customerName}</p>
               <p><strong>Phone:</strong> {selectedBill.customerPhone}</p>
-              <p><strong>Original Total:</strong> Rs. {selectedBill.totalAmount?.toFixed(2) || "0.00"}</p>
+              <p><strong>Original Total:</strong> Rs. {selectedBill.totalAmount?.toFixed(2)}</p>
               <p><strong>Payment Mode:</strong> {selectedBill.paymentMode?.toUpperCase()}</p>
+              {selectedBill.discount > 0 && (
+                <p><strong>Discount:</strong> {selectedBill.discountType === "percentage" ? `${selectedBill.discountValue}%` : `Rs. ${selectedBill.discountValue.toFixed(2)}`} (Rs. {selectedBill.discount.toFixed(2)})</p>
+              )}
+              {selectedBill.labourCost > 0 && (
+                <p><strong>Labor Cost:</strong> Rs. {selectedBill.labourCost.toFixed(2)}</p>
+              )}
             </div>
           </div>
         )}
@@ -574,16 +629,17 @@ const ReturnManagement = () => {
             <thead>
               <tr>
                 <th>Product</th>
+                <th>Max Qty</th>
                 <th>Return Qty</th>
                 <th>Price</th>
                 <th>Total</th>
-                <th>Action</th>
+                {/* <th>Action</th> */}
               </tr>
             </thead>
             <tbody>
               {returnItems.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-return">
+                  <td colSpan="6" className="empty-return">
                     Select a bill to process returns
                   </td>
                 </tr>
@@ -591,6 +647,7 @@ const ReturnManagement = () => {
                 returnItems.map((item) => (
                   <tr key={item._id}>
                     <td>{item.productName}</td>
+                    <td>{item.maxQuantity}</td>
                     <td>
                       <div className="quantity-control">
                         <button
@@ -632,11 +689,11 @@ const ReturnManagement = () => {
                         </button>
                       </div>
                     </td>
-                    <td>Rs. {item.salePrice?.toFixed(2) || "0.00"}</td>
+                    <td>Rs. {item.salePrice?.toFixed(2)}</td>
                     <td>
-                      Rs. {((item.salePrice || 0) * item.returnQuantity).toFixed(2)}
+                      Rs. {(item.salePrice * item.returnQuantity).toFixed(2)}
                     </td>
-                    <td>
+                    {/* <td>
                       <button
                         onClick={() => handleDeleteItem(item._id)}
                         className="btn-delete"
@@ -644,7 +701,7 @@ const ReturnManagement = () => {
                       >
                         <Trash2 size={18} />
                       </button>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               )}
@@ -694,7 +751,7 @@ const ReturnManagement = () => {
                         {bill.items?.length || 0}
                       </td>
                       <td className="bill-total-cell">
-                        Rs. {bill.totalAmount?.toFixed(2) || "0.00"}
+                        Rs. {bill.totalAmount?.toFixed(2)}
                       </td>
                       <td>
                         <button
@@ -722,6 +779,14 @@ const ReturnManagement = () => {
             <span>{selectedBill?.billNo || "None"}</span>
           </div>
           <div className="summary-row">
+            <span>Customer Name:</span>
+            <span>{selectedBill?.customerName || "N/A"}</span>
+          </div>
+          <div className="summary-row">
+            <span>Customer Phone:</span>
+            <span>{selectedBill?.customerPhone || "N/A"}</span>
+          </div>
+          <div className="summary-row">
             <span>Return Items:</span>
             <span>
               {returnItems.filter((i) => i.returnQuantity > 0).length}
@@ -739,9 +804,32 @@ const ReturnManagement = () => {
             <span>Rs. {calculateReturnSubtotal().toFixed(2)}</span>
           </div>
 
+          {calculateReturnDiscount() > 0 && (
+            <div className="summary-row savings-row">
+              <span>Discount Deducted:</span>
+              <span className="savings-amount">
+                -Rs. {calculateReturnDiscount().toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {selectedBill && selectedBill.labourCost > 0 && (
+            <div className="summary-row labor-row">
+              <span>Labor Cost (Not Refunded):</span>
+              <span className="labor-amount">
+                Rs. {selectedBill.labourCost.toFixed(2)}
+              </span>
+            </div>
+          )}
+
           <div className="summary-row total-row">
-            <span>Total Refund:</span>
-            <span>Rs. {calculateReturnTotal().toFixed(2)}</span>
+            <span>Refund Amount:</span>
+            <span>Rs. {calculateRefundAmount().toFixed(2)}</span>
+          </div>
+
+          <div className="summary-row">
+            <span>New Total Amount:</span>
+            <span>Rs. {calculateNewTotalAmount().toFixed(2)}</span>
           </div>
 
           <div className="return-reason-section">
@@ -829,7 +917,7 @@ const ReturnManagement = () => {
                       returnReceiptData.shift.slice(1)}
                   </p>
                   <p>
-                    <strong>Refund:</strong>{" "}
+                    <strong>Refund Mode:</strong>{" "}
                     {returnReceiptData.refundMode.toUpperCase()}
                   </p>
                 </div>
@@ -853,14 +941,12 @@ const ReturnManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {returnReceiptData.items.map((item) => (
-                    <tr key={item._id}>
+                  {returnReceiptData.items.map((item, index) => (
+                    <tr key={index}>
                       <td>{item.productName}</td>
                       <td>{item.returnQuantity}</td>
-                      <td>Rs. {item.salePrice?.toFixed(2) || "0.00"}</td>
-                      <td>
-                        Rs. {item.total?.toFixed(2) || "0.00"}
-                      </td>
+                      <td>Rs. {item.salePrice?.toFixed(2)}</td>
+                      <td>Rs. {item.total?.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -872,24 +958,56 @@ const ReturnManagement = () => {
                   <span>Rs. {returnReceiptData.returnSubtotal.toFixed(2)}</span>
                 </div>
                 
-                {returnReceiptData.discount > 0 && (
-                  <div className="summary-line discount-highlight">
-                    <span>Discount Deducted:</span>
-                    <span>-Rs. {returnReceiptData.discount.toFixed(2)}</span>
-                  </div>
+                {returnReceiptData.returnDiscount > 0 && (
+                  <>
+                    <div className="summary-line">
+                      <span>Discount ({returnReceiptData.discountType === "percentage" ? `${returnReceiptData.discountValue}%` : `Rs. ${returnReceiptData.discountValue.toFixed(2)}`}):</span>
+                      <span>-Rs. {returnReceiptData.returnDiscount.toFixed(2)}</span>
+                    </div>
+                    <div className="summary-line savings-highlight">
+                      <span>Discount Deducted:</span>
+                      <span>Rs. {returnReceiptData.returnDiscount.toFixed(2)}</span>
+                    </div>
+                  </>
                 )}
                 
-                {returnReceiptData.laborCost > 0 && (
+                {returnReceiptData.labourCost > 0 && (
                   <div className="summary-line labor-highlight">
-                    <span>Labor Cost Added:</span>
-                    <span>+Rs. {returnReceiptData.laborCost.toFixed(2)}</span>
+                    <span>Labor Cost (Not Refunded):</span>
+                    <span>Rs. {returnReceiptData.labourCost.toFixed(2)}</span>
                   </div>
                 )}
                 
                 <div className="summary-line total">
-                  <span>Total Refund:</span>
-                  <span>Rs. {returnReceiptData.returnTotal.toFixed(2)}</span>
+                  <span>Refund Amount:</span>
+                  <span>Rs. {returnReceiptData.refundAmount.toFixed(2)}</span>
                 </div>
+
+                <div className="summary-line">
+                  <span>New Bill Total:</span>
+                  <span>Rs. {returnReceiptData.totalAmount.toFixed(2)}</span>
+                </div>
+
+                {returnReceiptData.userPaidAmount !== undefined && (
+                  <>
+                    {/* <div className="summary-line">
+                      <span>Amount Paid:</span>
+                      <span>Rs. {returnReceiptData.userPaidAmount.toFixed(2)}</span>
+                    </div> */}
+                    {/* {returnReceiptData.change > 0 && (
+                      // <div className="summary-line">
+                      //   <span>Change:</span>
+                      //   <span>Rs. {returnReceiptData.change.toFixed(2)}</span>
+                      // </div>
+                    // )} */}
+                    {returnReceiptData.remainingAmount > 0 && (
+                      <div className="summary-line">
+                        <span>Remaining Amount:</span>
+                        <span>Rs. {returnReceiptData.remainingAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               <div className="return-reason-box">
