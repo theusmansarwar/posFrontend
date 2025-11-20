@@ -33,20 +33,15 @@
   --heading-top-space: 50px;
   --heading-bottom-space: 30px;
   --span-heading-space: 33px;
-
   --heading-font: 24px;
-
   --avatar: 106px;
-
   --card-p-size: 18px;
   --hero-section-heading: 76px;
   --hero-section-description: 18px;
   --hero-section-height: 500px;
-
   --service-card-height: 445px;
   --service-card-img-height: 230px;
   --service-card-p-height: 150px;
-
   --team-background-height: 500px;
   --headings-color: var(--primary-color);
   --shadow-low1: hsla(217, 48%, 60%, 0.299);
@@ -63,27 +58,38 @@
   --default-p-size2: 14px;
   --default-border-radius: 6px;
   --warning-color: rgb(255, 38, 0);
-   --warning-bgcolor: rgba(255, 38, 0, 0.426);
+  --warning-bgcolor: rgba(255, 38, 0, 0.426);
   --success-color: rgb(0, 101, 0);
-  --success-bgcolor:rgba(2, 216, 2, 0.512);
+  --success-bgcolor: rgba(2, 216, 2, 0.512);
 }
-
 
 body {
   font-family: "Nunito", sans-serif;
   padding: 0%;
   margin: 0%;
-  scrollbar-width: none;
+  /* Allow scrolling but hide bar visually */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
 }
+
+/* Hide scrollbar for Chrome/Safari/Opera */
+body::-webkit-scrollbar,
+.app-right::-webkit-scrollbar,
+.app-side-bar ul::-webkit-scrollbar,
+.Dashboard::-webkit-scrollbar,
+.admin-body::-webkit-scrollbar {
+  display: none;
+}
+
 .App {
   display: flex;
   height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); 
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
-p, h1, h2, h3, h4, h5, h6{
+
+p, h1, h2, h3, h4, h5, h6 {
   padding: 0%;
   margin: 0%;
-
 }
 
 .home-zemalt-logo {
@@ -91,32 +97,23 @@ p, h1, h2, h3, h4, h5, h6{
   margin-top: 15px;
 }
 
-
-.userprofile{
- 
+.userprofile {
   height: 90px;
   width: 100%;
- display: flex;
-
- align-items: center;
-
+  display: flex;
+  align-items: center;
 }
-.userprofile .avatar{
+.userprofile .avatar {
   height: 50px;
   width: 50px;
   margin-left: 10px;
   border-radius: 50%;
-
 }
-.userprofile .avatar-data{
- 
+.userprofile .avatar-data {
   margin-left: 10px;
-
 }
-.userprofile .avatar-data p{
-font-size: 12px;
-
-
+.userprofile .avatar-data p {
+  font-size: 12px;
 }
 
 .app-side-bar {
@@ -131,7 +128,8 @@ font-size: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: width 0.3s ease; /* ✅ smooth sidebar resize */
+  transition: width 0.3s ease;
+  /* ✅ REMOVED OVERFLOW HERE to save the close button */
 }
 
 .app-side-bar.closed {
@@ -155,11 +153,10 @@ font-size: 12px;
   transition: background-color 0.3s ease;
 }
 .app-side-bar.closed .opencloseicon {
-   height: 30px;
+  height: 30px;
   width: 30px;
   top: 8vh;
- transition: height 0.3s ease, width 0.3s ease, top 0.3s ease;
- 
+  transition: height 0.3s ease, width 0.3s ease, top 0.3s ease;
 }
 
 .opencloseicon:hover {
@@ -179,32 +176,30 @@ font-size: 12px;
   width: 45%;
   margin-top: 20px;
   transition: opacity 0.3s ease, width 0.3s ease;
+  flex-shrink: 0; /* Ensure logo doesn't shrink when list grows */
 }
-
-/* .app-side-bar.closed .home-digitalaura-logo {
-  opacity: 0;  
-  width: 0;
-} */
 
 .app-right {
   width: 81%;
   height: calc(100vh - 60px);
   padding: 30px;
-  overflow-y: scroll;
-  scrollbar-width: none;
-  transition: width 0.3s ease; 
+  overflow-y: scroll; /* Keep scroll functionality */
+  scrollbar-width: none; /* Hide visual scrollbar */
+  -ms-overflow-style: none;
+  transition: width 0.3s ease;
 }
 
 .app-side-bar.closed ~ .app-right {
-  width: calc(100% - 80px); 
+  width: calc(100% - 80px);
 }
-
 
 .Dashboard,
 .admin-body {
   height: 96vh;
   padding: 2vh 3%;
   overflow-y: scroll;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .mini-search-section {
@@ -229,19 +224,6 @@ font-size: 12px;
 .Content-area {
   display: flex;
 }
-/* .left-area{
-width: 25%;
-height: 90vh;
-
-background:
-linear-gradient(to top , #7823ff, transparent),
-linear-gradient(to bottom left,#21b9fa , transparent),
-linear-gradient(to bottom right, #ffffff, transparent);
-background-blend-mode: screen;
-overflow-y: scroll;
-scrollbar-width: none;
-
-} */
 
 .app-side-bar ul {
   list-style: none;
@@ -249,20 +231,24 @@ scrollbar-width: none;
   padding: 0%;
   width: 90%;
   position: relative;
-  height: 100%;
+  /* ✅ ADDED: Scroll logic strictly for the list */
+  overflow-y: scroll;
+  height: 100%; 
+  scrollbar-width: none; /* Hide visual scrollbar Firefox */
+  -ms-overflow-style: none; /* Hide visual scrollbar IE */
 }
+
+/* Ensure last child spacing works with scroll */
 .app-side-bar ul li:last-child {
-  position: absolute;
-  bottom: 10px;
-  width:90%;
-  
+  margin-bottom: 20px;
+  width: 90%;
 }
+
 .app-side-bar.closed ul li:last-child {
-  position: absolute;
-  bottom: 10px;
-  width:38px;
-  
+   margin-bottom: 20px;
+   width: 38px;
 }
+
 .app-side-bar.closed .unselected {
   padding: 10px;
   color: rgb(44, 44, 44);
@@ -277,8 +263,8 @@ scrollbar-width: none;
   color: var(--text-color);
   border-radius: 4px;
   padding: 10px;
-    display: flex;
-    justify-content: center;
+  display: flex;
+  justify-content: center;
   margin: 5px 1px;
   gap: 10px;
   font-size: 20px;
@@ -297,7 +283,7 @@ scrollbar-width: none;
   color: var(--text-color);
   border-radius: 4px;
   padding: 10px;
-    display: flex;
+  display: flex;
   margin: 1px;
   gap: 10px;
   font-size: 16px;
@@ -317,29 +303,29 @@ scrollbar-width: none;
   bottom: 50px;
   display: flex;
   justify-content: center;
-  animation: slideIn 0.5s ease-in; /* Animation for sliding in */
+  animation: slideIn 0.5s ease-in;
 }
 .Alert-message-area.hidden {
   animation: slideOut 0.5s ease-out;
 }
-/* Slide-in animation */
+
 @keyframes slideIn {
   0% {
-    bottom: -100px; /* Starts from below the screen */
+    bottom: -100px;
     opacity: 0;
-    visibility: visible; /* Make the element visible at the start */
+    visibility: visible;
   }
   100% {
-    bottom: 50px; /* Ends at the defined position */
+    bottom: 50px;
     opacity: 1;
   }
 }
 @keyframes slideOut {
   0% {
-    bottom: 50px; /* Starts from below the screen */
+    bottom: 50px;
   }
   100% {
-    bottom: -20px; /* Ends at the defined position */
+    bottom: -20px;
   }
 }
 
