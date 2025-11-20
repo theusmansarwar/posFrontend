@@ -37,9 +37,7 @@ import {
 } from "../../DAL/fetch";
 
 const reportTypes = ["Stock", "Bills", "Expenses"];
-
 const excludeFields = ['_id', 'id', '__v', 'password', 'token', 'createdAt', 'updatedAt', '__typename'];
-
 const reportFieldConfig = {
   Stock: [
     { key: 'productId', label: 'Product ID', paths: ['productId', 'id'] },

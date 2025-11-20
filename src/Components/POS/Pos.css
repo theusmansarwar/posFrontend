@@ -826,3 +826,17 @@
     padding: 0;
   }
 }
+
+.input-error {
+  border: 1px solid #dc2626 !important; 
+  background-color: #fef2f2; 
+}
+
+
+.error-text {
+  display: block;
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}

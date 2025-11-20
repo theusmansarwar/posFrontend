@@ -33,9 +33,9 @@ const POSBillingSystem = () => {
   const [billData, setBillData] = useState(null);
   const [products, setProducts] = useState([]);
 
-  // State for Field-Level Errors
+  // State for Field-Level Errors (Red Borders)
   const [fieldErrors, setFieldErrors] = useState({});
-  
+
   // State for Global Errors
   const [globalError, setGlobalError] = useState("");
 
@@ -73,15 +73,12 @@ const POSBillingSystem = () => {
   }, [searchId]);
 
   const handleAddToCart = (product) => {
-    setGlobalError(""); 
+    setGlobalError("");
     const existingItem = cartItems.find((item) => item._id === product._id);
     if (existingItem) {
       updateQuantity(product._id, existingItem.quantity + 1);
     } else {
-      setCartItems([
-        ...cartItems,
-        { ...product, quantity: 1, salePrice: 1.0 },
-      ]);
+      setCartItems([...cartItems, { ...product, quantity: 1, salePrice: 1.0 }]);
     }
   };
 
@@ -148,7 +145,7 @@ const POSBillingSystem = () => {
     }
   };
 
-  const handleGenerateBill = async () => {
+const handleGenerateBill = async () => {
     setFieldErrors({});
     setGlobalError("");
 
@@ -214,27 +211,34 @@ const POSBillingSystem = () => {
       console.error("Error creating bill:", error);
       
       const backendErrors = {};
-      const backendMsg = error.response?.data?.error || error.response?.data?.message || error.message || "Unknown Error";
-
-      if (backendMsg.includes("customerName")) backendErrors.customerName = "Customer Name is required";
-      if (backendMsg.includes("customerPhone")) backendErrors.customerPhone = "Phone Number is required";
-
-      if (!customerName.trim()) {
-        backendErrors.customerName = "Customer Name is required";
-      }
-      if (!customerPhone.trim()) {
-        backendErrors.customerPhone = "Phone Number is required";
+      const responseData = error.response?.data;
+      
+      // Check if backend sent missingFields array
+      if (responseData?.missingFields && Array.isArray(responseData.missingFields)) {
+        responseData.missingFields.forEach(field => {
+          backendErrors[field.name] = field.message;
+        });
+      } else {
+        // Fallback: parse from message string
+        const backendMsg = responseData?.error || responseData?.message || error.message || "Unknown Error";
+        
+        if (backendMsg.includes("customerName") || backendMsg.toLowerCase().includes("customer name")) {
+          backendErrors.customerName = "Customer Name is required";
+        }
+        if (backendMsg.includes("customerPhone") || backendMsg.toLowerCase().includes("customer phone")) {
+          backendErrors.customerPhone = "Customer Phone is required";
+        }
       }
 
       // Update State
       if (Object.keys(backendErrors).length > 0) {
         setFieldErrors(backendErrors);
+        setGlobalError(""); // Clear global error when showing field errors
       } else {
-        setGlobalError(backendMsg); 
+        setGlobalError(responseData?.message || responseData?.error || error.message || "Failed to generate bill");
       }
     }
   };
-
   const handlePrint = () => {
     const logoElement = billRef.current?.querySelector(".company-logo");
     const logoSrc = logoElement?.src || logoo;
@@ -445,9 +449,7 @@ const POSBillingSystem = () => {
                         }}
                       />
                     </td>
-                    <td>
-                      Rs. {(item.salePrice * item.quantity).toFixed(2)}
-                    </td>
+                    <td>Rs. {(item.salePrice * item.quantity).toFixed(2)}</td>
                     <td>
                       <button
                         onClick={() => removeItem(item._id)}
@@ -570,7 +572,9 @@ const POSBillingSystem = () => {
 
           <div className="customer-details-section">
             <div className="summary-row">
-              <span>Customer Name:<span style={{color:'red'}}>*</span></span>
+              <span>
+                Customer Name:<span style={{ color: "red" }}>*</span>
+              </span>
               <div className="input-group">
                 <input
                   type="text"
@@ -579,15 +583,21 @@ const POSBillingSystem = () => {
                     setCustomerName(e.target.value);
                     clearError("customerName");
                   }}
-                  className={`discount-input ${fieldErrors.customerName ? "input-error" : ""}`}
+                  className={`discount-input ${
+                    fieldErrors.customerName ? "input-error" : ""
+                  }`}
                   placeholder="Enter customer name"
                 />
-                {fieldErrors.customerName && <span className="error-text">{fieldErrors.customerName}</span>}
+                {fieldErrors.customerName && (
+                  <span className="error-text">{fieldErrors.customerName}</span>
+                )}
               </div>
             </div>
 
             <div className="summary-row">
-              <span>Customer Phone:<span style={{color:'red'}}>*</span></span>
+              <span>
+                Customer Phone:<span style={{ color: "red" }}>*</span>
+              </span>
               <div className="input-group">
                 <input
                   type="tel"
@@ -596,10 +606,16 @@ const POSBillingSystem = () => {
                     setCustomerPhone(e.target.value);
                     clearError("customerPhone");
                   }}
-                  className={`discount-input ${fieldErrors.customerPhone ? "input-error" : ""}`}
+                  className={`discount-input ${
+                    fieldErrors.customerPhone ? "input-error" : ""
+                  }`}
                   placeholder="Enter phone number"
                 />
-                {fieldErrors.customerPhone && <span className="error-text">{fieldErrors.customerPhone}</span>}
+                {fieldErrors.customerPhone && (
+                  <span className="error-text">
+                    {fieldErrors.customerPhone}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -629,19 +645,19 @@ const POSBillingSystem = () => {
         </div>
 
         {globalError && (
-          <div 
+          <div
             style={{
-              backgroundColor: '#fee2e2',
-              border: '1px solid #ef4444',
-              color: '#b91c1c',
-              padding: '10px',
-              borderRadius: '6px',
-              marginBottom: '15px',
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontWeight: '500'
+              backgroundColor: "#fee2e2",
+              border: "1px solid #ef4444",
+              color: "#b91c1c",
+              padding: "10px",
+              borderRadius: "6px",
+              marginBottom: "15px",
+              fontSize: "14px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              fontWeight: "500",
             }}
           >
             <AlertCircle size={20} />
@@ -677,17 +693,34 @@ const POSBillingSystem = () => {
 
               <div className="receipt-info">
                 <div className="Bill-date">
-                  <p><strong>Bill No:</strong> {billData.billNo}</p>
-                  <p><strong>Date:</strong> {billData.date}</p>
+                  <p>
+                    <strong>Bill No:</strong> {billData.billNo}
+                  </p>
+                  <p>
+                    <strong>Date:</strong> {billData.date}
+                  </p>
                 </div>
                 <div className="Cashier-info">
-                  <p><strong>Cashier:</strong> {billData.cashierName}</p>
-                  <p><strong>Shift:</strong> {billData.shift.charAt(0).toUpperCase() + billData.shift.slice(1)}</p>
-                  <p><strong>Payment:</strong> {billData.paymentMode.toUpperCase()}</p>
+                  <p>
+                    <strong>Cashier:</strong> {billData.cashierName}
+                  </p>
+                  <p>
+                    <strong>Shift:</strong>{" "}
+                    {billData.shift.charAt(0).toUpperCase() +
+                      billData.shift.slice(1)}
+                  </p>
+                  <p>
+                    <strong>Payment:</strong>{" "}
+                    {billData.paymentMode.toUpperCase()}
+                  </p>
                 </div>
                 <div className="customer-info-section">
-                  <p><strong>Customer:</strong> {billData.customerName}</p>
-                  <p><strong>Phone:</strong> {billData.customerPhone}</p>
+                  <p>
+                    <strong>Customer:</strong> {billData.customerName}
+                  </p>
+                  <p>
+                    <strong>Phone:</strong> {billData.customerPhone}
+                  </p>
                 </div>
               </div>
 
@@ -720,7 +753,13 @@ const POSBillingSystem = () => {
                 {billData.discount > 0 && (
                   <>
                     <div className="summary-line">
-                      <span>Discount ({billData.discountType === "percentage" ? `${billData.discountValue}%` : `Rs. ${billData.discountValue}`}):</span>
+                      <span>
+                        Discount (
+                        {billData.discountType === "percentage"
+                          ? `${billData.discountValue}%`
+                          : `Rs. ${billData.discountValue}`}
+                        ):
+                      </span>
                       <span>-Rs. {billData.discount.toFixed(2)}</span>
                     </div>
                     <div className="summary-line savings-highlight">
@@ -758,7 +797,9 @@ const POSBillingSystem = () => {
                 <p>Visit again</p>
                 <div className="watermark">
                   <p>Software Powered by</p>
-                  <p><strong>Zemalt PVT LTD</strong></p>
+                  <p>
+                    <strong>Zemalt PVT LTD</strong>
+                  </p>
                   <p className="phone-contact">
                     <FaPhoneAlt className="phone-icon" />
                     <span>03285522005</span>

@@ -138,6 +138,12 @@ const ReturnManagement = () => {
     }
   };
 
+  const handleClearSelection = () => {
+    setSelectedBill(null);
+    setReturnItems([]);
+    setReturnReason("");
+  };
+
   const handleSearchInputChange = (e) => {
     setSearchBillId(e.target.value);
   };
@@ -590,7 +596,27 @@ const ReturnManagement = () => {
 
         {selectedBill && (
           <div className="selected-bill-info">
-            <h3 className="subsection-title">Selected Bill Details</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <h3 className="subsection-title" style={{ margin: 0 }}>Selected Bill Details</h3>
+              <button
+                onClick={handleClearSelection}
+                style={{
+                  padding: '8px 16px',
+                  background: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.target.style.background = '#b91c1c'}
+                onMouseOut={(e) => e.target.style.background = '#dc2626'}
+              >
+                Clear
+              </button>
+            </div>
             <div className="bill-details-box">
               <p><strong>Bill No:</strong> {selectedBill.billNo}</p>
               <p><strong>Date:</strong> {selectedBill.date}</p>
@@ -633,13 +659,12 @@ const ReturnManagement = () => {
                 <th>Return Qty</th>
                 <th>Price</th>
                 <th>Total</th>
-                {/* <th>Action</th> */}
               </tr>
             </thead>
             <tbody>
               {returnItems.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="empty-return">
+                  <td colSpan="5" className="empty-return">
                     Select a bill to process returns
                   </td>
                 </tr>
@@ -693,15 +718,6 @@ const ReturnManagement = () => {
                     <td>
                       Rs. {(item.salePrice * item.returnQuantity).toFixed(2)}
                     </td>
-                    {/* <td>
-                      <button
-                        onClick={() => handleDeleteItem(item._id)}
-                        className="btn-delete"
-                        title="Remove from return list"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td> */}
                   </tr>
                 ))
               )}
@@ -990,16 +1006,6 @@ const ReturnManagement = () => {
 
                 {returnReceiptData.userPaidAmount !== undefined && (
                   <>
-                    {/* <div className="summary-line">
-                      <span>Amount Paid:</span>
-                      <span>Rs. {returnReceiptData.userPaidAmount.toFixed(2)}</span>
-                    </div> */}
-                    {/* {returnReceiptData.change > 0 && (
-                      // <div className="summary-line">
-                      //   <span>Change:</span>
-                      //   <span>Rs. {returnReceiptData.change.toFixed(2)}</span>
-                      // </div>
-                    // )} */}
                     {returnReceiptData.remainingAmount > 0 && (
                       <div className="summary-line">
                         <span>Remaining Amount:</span>

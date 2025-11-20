@@ -88,7 +88,14 @@ export const createBill = async (billData) => {
     },
     postData: billData,
   };
-  return invokeApi(reqObj);
+  
+  const response = await invokeApi(reqObj);
+  
+  if (response?.missingFields || response?.message === "Missing required fields") {
+    throw { response: { data: response } };
+  }
+  
+  return response;
 };
 
 export const createReport = async (billData) => {
