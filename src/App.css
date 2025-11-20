@@ -67,12 +67,10 @@ body {
   font-family: "Nunito", sans-serif;
   padding: 0%;
   margin: 0%;
-  /* Allow scrolling but hide bar visually */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
 }
 
-/* Hide scrollbar for Chrome/Safari/Opera */
 body::-webkit-scrollbar,
 .app-right::-webkit-scrollbar,
 .app-side-bar ul::-webkit-scrollbar,
@@ -129,7 +127,6 @@ p, h1, h2, h3, h4, h5, h6 {
   flex-direction: column;
   align-items: center;
   transition: width 0.3s ease;
-  /* ✅ REMOVED OVERFLOW HERE to save the close button */
 }
 
 .app-side-bar.closed {
@@ -176,15 +173,15 @@ p, h1, h2, h3, h4, h5, h6 {
   width: 45%;
   margin-top: 20px;
   transition: opacity 0.3s ease, width 0.3s ease;
-  flex-shrink: 0; /* Ensure logo doesn't shrink when list grows */
+  flex-shrink: 0; 
 }
 
 .app-right {
   width: 81%;
   height: calc(100vh - 60px);
   padding: 30px;
-  overflow-y: scroll; /* Keep scroll functionality */
-  scrollbar-width: none; /* Hide visual scrollbar */
+  overflow-y: scroll; 
+  scrollbar-width: none; 
   -ms-overflow-style: none;
   transition: width 0.3s ease;
 }
@@ -231,14 +228,13 @@ p, h1, h2, h3, h4, h5, h6 {
   padding: 0%;
   width: 90%;
   position: relative;
-  /* ✅ ADDED: Scroll logic strictly for the list */
+
   overflow-y: scroll;
   height: 100%; 
-  scrollbar-width: none; /* Hide visual scrollbar Firefox */
-  -ms-overflow-style: none; /* Hide visual scrollbar IE */
+  scrollbar-width: none; 
+  -ms-overflow-style: none; 
 }
 
-/* Ensure last child spacing works with scroll */
 .app-side-bar ul li:last-child {
   margin-bottom: 20px;
   width: 90%;
