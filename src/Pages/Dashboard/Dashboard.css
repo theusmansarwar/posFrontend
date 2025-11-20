@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 
 
 /* Loading State */
@@ -295,3 +296,5 @@
   .section-products, .section-expenses { padding: 1rem; }
   .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
 }
+=======
+>>>>>>> Stashed changes

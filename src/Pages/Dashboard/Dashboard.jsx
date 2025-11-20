@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -214,3 +215,19 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+=======
+import React from 'react'
+import './Dashboard.css';
+import DashboardData from '../../Components/Dashboard data/DashboardData';
+const Dashboard = () => {
+  return (
+    <div>
+      <DashboardData/>
+      <DashboardData/>
+      <DashboardData/>
+    </div>
+  )
+}
+
+export default Dashboard
+>>>>>>> Stashed changes
