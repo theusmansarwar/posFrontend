@@ -1,6 +1,3 @@
-<<<<<<< Updated upstream
-"use client";
-
 import React, { useEffect, useState } from "react";
 import { Download, TrendingUp, Package } from "lucide-react";
 import { GiMoneyStack } from "react-icons/gi";
@@ -215,19 +212,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-=======
-import React from 'react'
-import './Dashboard.css';
-import DashboardData from '../../Components/Dashboard data/DashboardData';
-const Dashboard = () => {
-  return (
-    <div>
-      <DashboardData/>
-      <DashboardData/>
-      <DashboardData/>
-    </div>
-  )
-}
-
-export default Dashboard
->>>>>>> Stashed changes

@@ -1,7 +1,4 @@
-<<<<<<< Updated upstream
 
-
-/* Loading State */
 .dashboard-loading {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -296,5 +293,3 @@
   .section-products, .section-expenses { padding: 1rem; }
   .metrics-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
 }
-=======
->>>>>>> Stashed changes
