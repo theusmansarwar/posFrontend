@@ -32,6 +32,8 @@ import BillHistory from "./Pages/BillHistory/BillHistory";
 import Reports from "./Components/Models/AddReports"
 import SalesReport from "./Pages/SalesReport/SalesReport";
 import PendingAmountPage from "./Pages/Pending Amount/PendingAmountPage";
+import ProductSalesReports from "./Pages/ProductSalesReport/ProductSalesReport";
+
 
 const App = ({ onLogout }) => {
   const navigate = useNavigate();
@@ -53,7 +55,8 @@ const App = ({ onLogout }) => {
     { id: 8, name: "Bill History", route: "/bill-history", icon: <RiBillFill />  , module: "Bill History" },
     { id: 9, name: "Reports", route: "/reports", icon: <BiSolidReport />, module: "Reports" },
     { id: 10, name: "Sales Report", route: "/salesReport", icon: <BsGraphUpArrow />, module: "Sales Report" },
-    { id: 11, name: "Pending Amount", route: "/PendingAmount", icon: <GiTakeMyMoney />, module: "Pending Amount" }
+    { id: 11, name: "Pending Amount", route: "/PendingAmount", icon: <GiTakeMyMoney />, module: "Pending Amount" },
+    { id: 12, name: "Product Sales Report", route: "/productsSalesReport", icon: <GiTakeMyMoney />, module: "Product Sales Report" }
   ];
 
   // ✅ Get user modules from localStorage on component mount
@@ -64,13 +67,13 @@ const App = ({ onLogout }) => {
 
       if (userDataString) {
         const userData = JSON.parse(userDataString);
-        console.log("📌 Parsed User Data:", userData);
-        console.log("📌 User Role:", userData?.role);
+        console.log(" Parsed User Data:", userData);
+        console.log(" User Role:", userData?.role);
 
-        // ✅ Try multiple possible locations for modules
+       
         let modules = [];
 
-        // Check different possible structures
+        
         if (userData?.role?.Modules && Array.isArray(userData.role.Modules)) {
           modules = userData.role.Modules;
           console.log("✅ Found modules in role.Modules:", modules);
@@ -260,6 +263,10 @@ const App = ({ onLogout }) => {
         <Route
            path="/PendingAmount"
            element={hasAccess("/PendingAmount") ? <PendingAmountPage/> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
+          />
+           <Route
+           path="/productsSalesReport"
+           element={hasAccess("/productsSalesReport") ? <ProductSalesReports/> : <Navigate to={filteredItems[0]?.route || "/dashboard"} replace />}
           />
 
        

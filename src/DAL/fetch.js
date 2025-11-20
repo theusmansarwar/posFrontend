@@ -167,6 +167,19 @@ export const fetchProductsList = async (page = 1, limit = 50, keyword = "") => {
   };
   return invokeApi(reqObj);
 };
+
+export const fetchProductSalesReport = async (filter = "thisMonth") => { 
+  const reqObj = {  
+    path: `/stock/Product-Sales-Report?filter=${filter}`,
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("Token")}`,
+    },
+    postData: {},  
+  };
+  return invokeApi(reqObj);
+};
+
 export const fetchPendingAmount = async (page = 1, limit = 50, keyword = "") => {
   const reqObj = {
     path: `/bill/pendingamount?page=${page}&limit=${limit}&keyword=${keyword}`,

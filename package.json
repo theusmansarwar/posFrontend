@@ -14,7 +14,7 @@
     "axios": "^1.13.2",
     "html2canvas": "^1.4.1",
     "jodit-react": "^5.2.15",
-    "jspdf": "^3.0.3",
+    "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.553.0",
     "react": "^19.0.0",
