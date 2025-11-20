@@ -15,9 +15,13 @@ import {
   Tabs,
   Tab,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import DownloadIcon from "@mui/icons-material/Download";
 import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const TAB_FILTERS = [
   { label: "All", filter: "all" },
@@ -31,18 +35,18 @@ const TAB_FILTERS = [
 const getProfitStyles = (profit) => {
   if (profit > 0) {
     return {
-      color: "#1b5e20", 
-      backgroundColor: "rgba(76, 175, 80, 0.1)",  
+      color: "#1b5e20",
+      backgroundColor: "rgba(76, 175, 80, 0.1)",
     };
   } else if (profit < 0) {
     return {
-      color: "#b71c1c", 
-      backgroundColor: "rgba(244, 67, 54, 0.1)",  
+      color: "#b71c1c",
+      backgroundColor: "rgba(244, 67, 54, 0.1)",
     };
   }
   return {
-    color: "#616161",  
-    backgroundColor: "transparent",  
+    color: "#616161",
+    backgroundColor: "transparent",
   };
 };
 
@@ -51,20 +55,21 @@ const ProductSalesReports = () => {
   const [reportData, setReportData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState(4);  
+  const [activeTab, setActiveTab] = useState(4);
+  const [generating, setGenerating] = useState(false);
 
   const fetchDataFromAPI = useCallback(
     async (tabIndex, currentKeyword) => {
       setLoading(true);
-      const apiPage = 1;  
-      const currentLimit = 99999; 
+      const apiPage = 1;
+      const currentLimit = 99999;
       const filterValue = TAB_FILTERS[tabIndex]?.filter || "thisMonth";
 
       try {
         const response = await fetchProductSalesReport(
           filterValue,
           apiPage,
-          currentLimit, 
+          currentLimit,
           currentKeyword
         );
 
@@ -98,7 +103,152 @@ const ProductSalesReports = () => {
     setActiveTab(newValue);
   };
 
+  const handleGenerateReport = async () => {
+    setGenerating(true);
+    
+    const currentTabLabel = TAB_FILTERS[activeTab]?.label || "Report";
+    const currentDate = new Date().toLocaleString();
+    
+    // Calculate totals
+    const totalQuantity = reportData.reduce((sum, row) => sum + row.totalQuantity, 0);
+    const totalCost = reportData.reduce((sum, row) => sum + row.totalCost, 0);
+    const totalSale = reportData.reduce((sum, row) => sum + row.totalSale, 0);
+    const totalProfit = reportData.reduce((sum, row) => sum + row.profit, 0);
+
+    // Create HTML content for the report
+    const htmlContent = `
+      <div style="font-family: Arial, sans-serif; padding: 40px; background: white; max-width: 1200px; margin: 0 auto;">
+        <div style="text-align: center; border-bottom: 3px solid #1976d2; padding-bottom: 20px; margin-bottom: 30px;">
+          <h1 style="color: #1976d2; margin: 0 0 10px 0; font-size: 32px;">Ibrahim Autos & Wholesale</h1>
+          <h2 style="color: #424242; margin: 0 0 10px 0; font-size: 22px; font-weight: 500;">Product Sales Report - ${currentTabLabel}</h2>
+          <p style="color: #757575; margin: 5px 0; font-size: 14px;">Generated on: ${currentDate}</p>
+          ${searchQuery ? `<p style="color: #757575; margin: 5px 0; font-size: 14px;">Search Filter: "${searchQuery}"</p>` : ''}
+        </div>
+
+        ${reportData.length > 0 ? `
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px;">
+              <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Total Products</h3>
+              <p style="margin: 0; font-size: 28px; font-weight: 700;">${reportData.length}</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px;">
+              <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Total Cost</h3>
+              <p style="margin: 0; font-size: 28px; font-weight: 700;">PKR ${totalCost.toLocaleString()}</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px;">
+              <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Total Sale</h3>
+              <p style="margin: 0; font-size: 28px; font-weight: 700;">PKR ${totalSale.toLocaleString()}</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 8px;">
+              <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: 500; opacity: 0.9;">Total Profit</h3>
+              <p style="margin: 0; font-size: 28px; font-weight: 700;">PKR ${totalProfit.toLocaleString()}</p>
+            </div>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead style="background: #1976d2; color: white;">
+              <tr>
+                <th style="padding: 15px; text-align: left; font-weight: 600; font-size: 14px;">Product Name</th>
+                <th style="padding: 15px; text-align: right; font-weight: 600; font-size: 14px;">Quantity</th>
+                <th style="padding: 15px; text-align: right; font-weight: 600; font-size: 14px;">Total Cost</th>
+                <th style="padding: 15px; text-align: right; font-weight: 600; font-size: 14px;">Total Sale</th>
+                <th style="padding: 15px; text-align: right; font-weight: 600; font-size: 14px;">Profit/Loss</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData.map((row, index) => {
+                const profitClass = row.profit > 0 ? 'profit-positive' : row.profit < 0 ? 'profit-negative' : 'profit-zero';
+                const profitColor = row.profit > 0 ? '#1b5e20' : row.profit < 0 ? '#b71c1c' : '#616161';
+                const profitBg = row.profit > 0 ? 'rgba(76, 175, 80, 0.1)' : row.profit < 0 ? 'rgba(244, 67, 54, 0.1)' : 'transparent';
+                const rowBg = index % 2 === 0 ? '#fafafa' : 'white';
+                
+                return `
+                  <tr style="background-color: ${rowBg};">
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 13px;">
+                      <span style="font-weight: 600; color: #212121;">${row.name || 'N/A'}</span>
+                      <span style="color: #9e9e9e; font-size: 11px; display: block; margin-top: 3px;">ID: ${row.productId || 'N/A'}</span>
+                    </td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 13px; text-align: right;">${row.totalQuantity}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 13px; text-align: right;">PKR ${row.totalCost.toLocaleString()}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 13px; text-align: right;">PKR ${row.totalSale.toLocaleString()}</td>
+                    <td style="padding: 12px 15px; border-bottom: 1px solid #e0e0e0; font-size: 13px; text-align: right;">
+                      <span style="color: ${profitColor}; background-color: ${profitBg}; padding: 4px 8px; border-radius: 4px; font-weight: 600; display: inline-block;">PKR ${row.profit.toLocaleString()}</span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        ` : `
+          <div style="text-align: center; padding: 40px; color: #757575; font-size: 16px;">
+            <p>No sales data available for the selected period.</p>
+          </div>
+        `}
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e0e0e0; text-align: center; color: #757575; font-size: 12px;">
+          <p style="margin: 5px 0;">Ibrahim Autos & Wholesale - Product Sales Report</p>
+          <p style="margin: 5px 0;">Software Powered by Zemalt PVT LTD | Contact: 03285522005</p>
+        </div>
+      </div>
+    `;
+
+    // Create a temporary container
+    const tempContainer = document.createElement('div');
+    tempContainer.innerHTML = htmlContent;
+    tempContainer.style.position = 'absolute';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.width = '1200px';
+    document.body.appendChild(tempContainer);
+
+    try {
+      // Convert HTML to canvas
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // Save PDF
+      const fileName = `Product_Sales_Report_${currentTabLabel}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      // Remove temporary container
+      document.body.removeChild(tempContainer);
+      setGenerating(false);
+    }
+  };
+
   const dataToDisplay = reportData;
+
   return (
     <Box
       sx={{
@@ -125,8 +275,8 @@ const ProductSalesReports = () => {
             display: "flex",
             flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
-            alignItems: { xs: "flex-start", sm: "center" },
-            gap: { xs: 2, sm: 0 },
+            alignItems: "center",
+            gap: 2,
             p: { xs: 2, sm: 2.5, md: 3 },
             borderBottom: "1px solid #e0e0e0",
             flexShrink: 0,
@@ -151,7 +301,7 @@ const ProductSalesReports = () => {
             onChange={handleSearch}
             autoComplete="off"
             sx={{
-              width: { xs: "100%", sm: "300px", md: "350px" },
+              width: { xs: "100%", sm: "350px", md: "400px" },
               backgroundColor: "white",
               borderRadius: "8px",
               "& .MuiOutlinedInput-root": {
@@ -175,6 +325,32 @@ const ProductSalesReports = () => {
               ),
             }}
           />
+
+          <Button
+            variant="contained"
+            startIcon={generating ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />}
+            onClick={handleGenerateReport}
+            disabled={loading || dataToDisplay.length === 0 || generating}
+            sx={{
+              backgroundColor: "var(--primary-color, #1976d2)",
+              color: "white",
+              textTransform: "none",
+              fontWeight: 600,
+              padding: "8px 24px",
+              borderRadius: "8px",
+              boxShadow: "0 2px 6px rgba(25, 118, 210, 0.3)",
+              "&:hover": {
+                backgroundColor: "#1565c0",
+                boxShadow: "0 4px 10px rgba(25, 118, 210, 0.4)",
+              },
+              "&:disabled": {
+                backgroundColor: "#e0e0e0",
+                color: "#9e9e9e",
+              },
+            }}
+          >
+            {generating ? "Generating..." : "Generate Report"}
+          </Button>
         </Box>
 
         {/* Tabs Section */}
@@ -407,16 +583,15 @@ const ProductSalesReports = () => {
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
-                          {/* APPLYING STYLE TO TYPOGRAPHY */}
                           <Typography
                             sx={{
                               color: profitStyles.color,
-                              backgroundColor: profitStyles.backgroundColor,  
+                              backgroundColor: profitStyles.backgroundColor,
                               fontWeight: 600,
                               fontSize: { xs: "13px", sm: "14px" },
-                              display: "inline-block",  
-                              padding: "2px 8px", 
-                              borderRadius: "4px", 
+                              display: "inline-block",
+                              padding: "2px 8px",
+                              borderRadius: "4px",
                             }}
                           >
                             PKR {row.profit.toLocaleString()}
