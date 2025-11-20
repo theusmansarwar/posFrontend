@@ -65,7 +65,7 @@ const PendingAmountPage = () => {
   // Using the custom table hook
   const { tableUI } = useTable({
     attributes,
-    tableType: "PendingAmount",
+    tableType: "Pending Amount",
     customRender,
   });
 

@@ -192,7 +192,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(response.totalRecords);
       } 
     }
-      else if (tableType === "PendingAmount") {
+      else if (tableType === "Pending Amount") {
       response = await fetchPendingAmount(page, rowsPerPage, searchQuery);
       if (response.status === 400) {
         localStorage.removeItem("Token");
@@ -264,7 +264,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setModelData(category);
       setModeltype("Update");  
     }
-     else if (tableType === "PendingAmount") {
+     else if (tableType === "Pending Amount") {
       setOpenPendingAmountModal(true);
       setModelData(category);
       setModeltype("Update");  
@@ -309,7 +309,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       else if (tableType === "Sales Report") {
         response = await deleteAllExpense({ ids: selected });
       }
-        else if (tableType === "PendingAmount") {
+        else if (tableType === "Pending Amount") {
         response = await deleteAllPendingAmount({ ids: selected });
       }
 
@@ -509,7 +509,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   <DeleteIcon />
                 </IconButton>
               ) : (
-                tableType !== "CategoriesNames" && tableType !== "Bill History" && tableType !== "Sales Report" &&tableType !== "PendingAmount" &&(
+                tableType !== "CategoriesNames" && tableType !== "Bill History" && tableType !== "Sales Report" &&tableType !== "Pending Amount" &&(
                   <Button
                     sx={{
                       background: "var(--horizontal-gradient)",
@@ -577,7 +577,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   </TableRow>
                 </TableHead>
 
-                <TableBody>
+                <TableBody >
                   {isLoading ? (
                     <TableRow>
                       <TableCell colSpan={attributes.length + 2} align="center" sx={{ py: 8 }}>
