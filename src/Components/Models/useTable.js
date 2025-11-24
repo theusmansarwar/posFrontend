@@ -90,7 +90,9 @@ export function useTable({ attributes, tableType, limitPerPage = 25 }) {
 
   useEffect(() => {
     const handler = setTimeout(() => {
+      setPage(1)
       setDebouncedSearch(searchQuery);
+      
     }, 500); // delay in ms
 
     return () => {
@@ -564,7 +566,7 @@ export function useTable({ attributes, tableType, limitPerPage = 25 }) {
                 )}
               </Box>
             </Toolbar>
-            <TableContainer>
+            <TableContainer sx={{ maxHeight: "76vh" }}> 
               <Table stickyHeader>
                 <TableHead>
                   <TableRow
@@ -617,12 +619,12 @@ export function useTable({ attributes, tableType, limitPerPage = 25 }) {
 
                     <TableCell>Action</TableCell>
                     {tableType === "Stock" && (
-                      <TableCell>Add New Stock</TableCell>
+                      <TableCell>Add Stock</TableCell>
                     )}
                   </TableRow>
                 </TableHead>
 
-                <TableBody>
+                <TableBody >
                   {isLoading ? (
                     <TableRow>
                       <TableCell
