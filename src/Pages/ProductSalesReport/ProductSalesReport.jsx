@@ -16,12 +16,19 @@ import {
   Tab,
   CircularProgress,
   Button,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DownloadIcon from "@mui/icons-material/Download";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import GridOnIcon from "@mui/icons-material/GridOn";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import * as XLSX from "xlsx";
 
 const TAB_FILTERS = [
   { label: "All", filter: "all" },
@@ -57,6 +64,8 @@ const ProductSalesReports = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState(4);
   const [generating, setGenerating] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
 
   const fetchDataFromAPI = useCallback(
     async (tabIndex, currentKeyword) => {
@@ -103,7 +112,100 @@ const ProductSalesReports = () => {
     setActiveTab(newValue);
   };
 
-  const handleGenerateReport = async () => {
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleGenerateExcel = () => {
+    handleMenuClose();
+    setGenerating(true);
+
+    try {
+      const currentTabLabel = TAB_FILTERS[activeTab]?.label || "Report";
+      const currentDate = new Date().toLocaleString();
+
+      // Calculate totals
+      const totalQuantity = reportData.reduce((sum, row) => sum + row.totalQuantity, 0);
+      const totalCost = reportData.reduce((sum, row) => sum + row.totalCost, 0);
+      const totalSale = reportData.reduce((sum, row) => sum + row.totalSale, 0);
+      const totalProfit = reportData.reduce((sum, row) => sum + row.profit, 0);
+
+      // Prepare data for Excel
+      const excelData = [];
+
+      // Add header information
+      excelData.push(["Ibrahim Autos & Wholesale"]);
+      excelData.push([`Product Sales Report - ${currentTabLabel}`]);
+      excelData.push([`Generated on: ${currentDate}`]);
+      if (searchQuery) {
+        excelData.push([`Search Filter: "${searchQuery}"`]);
+      }
+      excelData.push([]); // Empty row
+
+      // Add summary statistics
+      excelData.push(["Summary"]);
+      excelData.push(["Total Products", reportData.length]);
+      excelData.push(["Total Quantity", totalQuantity]);
+      excelData.push(["Total Cost", `PKR ${totalCost.toLocaleString()}`]);
+      excelData.push(["Total Sale", `PKR ${totalSale.toLocaleString()}`]);
+      excelData.push(["Total Profit", `PKR ${totalProfit.toLocaleString()}`]);
+      excelData.push([]); // Empty row
+
+      // Add table headers
+      excelData.push(["Product ID", "Product Name", "Quantity", "Total Cost (PKR)", "Total Sale (PKR)", "Profit/Loss (PKR)"]);
+
+      // Add table data
+      reportData.forEach((row) => {
+        excelData.push([
+          row.productId || "N/A",
+          row.name || "N/A",
+          row.totalQuantity,
+          row.totalCost,
+          row.totalSale,
+          row.profit,
+        ]);
+      });
+
+      excelData.push([]); // Empty row
+      excelData.push(["Software Powered by Zemalt PVT LTD | Contact: 03285522005"]);
+
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 15 }, // Product ID
+        { wch: 35 }, // Product Name
+        { wch: 12 }, // Quantity
+        { wch: 18 }, // Total Cost
+        { wch: 18 }, // Total Sale
+        { wch: 18 }, // Profit/Loss
+      ];
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
+
+      // Generate file name
+      const fileName = `Product_Sales_Report_${currentTabLabel}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Save file
+      XLSX.writeFile(wb, fileName);
+
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      alert('Failed to generate Excel file. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGeneratePDF = async () => {
+    handleMenuClose();
     setGenerating(true);
     
     const currentTabLabel = TAB_FILTERS[activeTab]?.label || "Report";
@@ -326,31 +428,67 @@ const ProductSalesReports = () => {
             }}
           />
 
-          <Button
-            variant="contained"
-            startIcon={generating ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />}
-            onClick={handleGenerateReport}
-            disabled={loading || dataToDisplay.length === 0 || generating}
-            sx={{
-              backgroundColor: "var(--primary-color, #1976d2)",
-              color: "white",
-              textTransform: "none",
-              fontWeight: 600,
-              padding: "8px 24px",
-              borderRadius: "8px",
-              boxShadow: "0 2px 6px rgba(25, 118, 210, 0.3)",
-              "&:hover": {
-                backgroundColor: "#1565c0",
-                boxShadow: "0 4px 10px rgba(25, 118, 210, 0.4)",
-              },
-              "&:disabled": {
-                backgroundColor: "#e0e0e0",
-                color: "#9e9e9e",
-              },
-            }}
-          >
-            {generating ? "Generating..." : "Generate Report"}
-          </Button>
+          <Box>
+            <Button
+              variant="contained"
+              startIcon={generating ? <CircularProgress size={20} color="inherit" /> : <DownloadIcon />}
+              onClick={handleMenuClick}
+              disabled={loading || dataToDisplay.length === 0 || generating}
+              sx={{
+                backgroundColor: "var(--primary-color, #1976d2)",
+                color: "white",
+                textTransform: "none",
+                fontWeight: 600,
+                padding: "8px 24px",
+                borderRadius: "8px",
+                boxShadow: "0 2px 6px rgba(25, 118, 210, 0.3)",
+                "&:hover": {
+                  backgroundColor: "#1565c0",
+                  boxShadow: "0 4px 10px rgba(25, 118, 210, 0.4)",
+                },
+                "&:disabled": {
+                  backgroundColor: "#e0e0e0",
+                  color: "#9e9e9e",
+                },
+              }}
+            >
+              {generating ? "Generating..." : "Download Report"}
+            </Button>
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+              }}
+              sx={{
+                '& .MuiPaper-root': {
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  minWidth: '200px',
+                  mt: 1,
+                },
+              }}
+            >
+              <MenuItem onClick={handleGeneratePDF} sx={{ py: 1.5 }}>
+                <ListItemIcon>
+                  <PictureAsPdfIcon fontSize="small" sx={{ color: '#d32f2f' }} />
+                </ListItemIcon>
+                <ListItemText>Download as PDF</ListItemText>
+              </MenuItem>
+              <MenuItem onClick={handleGenerateExcel} sx={{ py: 1.5 }}>
+                <ListItemIcon>
+                  <GridOnIcon fontSize="small" sx={{ color: '#2e7d32' }} />
+                </ListItemIcon>
+                <ListItemText>Download as Excel</ListItemText>
+              </MenuItem>
+            </Menu>
+          </Box>
         </Box>
 
         {/* Tabs Section */}

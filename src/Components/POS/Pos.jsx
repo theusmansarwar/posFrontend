@@ -16,6 +16,8 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { fetchProductsList } from "../../DAL/fetch";
 import { createBill } from "../../DAL/create";
+import OutOfStock from "../OutOfStock";
+import LowStock from "../LowStock";
 
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
@@ -33,10 +35,8 @@ const POSBillingSystem = () => {
   const [billData, setBillData] = useState(null);
   const [products, setProducts] = useState([]);
 
-  // State for Field-Level Errors (Red Borders)
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // State for Global Errors
   const [globalError, setGlobalError] = useState("");
 
   const billRef = useRef();
@@ -72,17 +72,7 @@ const POSBillingSystem = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchId]);
 
-  const handleAddToCart = (product) => {
-    setGlobalError("");
-    const existingItem = cartItems.find((item) => item._id === product._id);
-    if (existingItem) {
-      updateQuantity(product._id, existingItem.quantity + 1);
-    } else {
-      setCartItems([...cartItems, { ...product, quantity: 1, salePrice: 1.0 }]);
-    }
-  };
-
-  const updateSalePrice = (_id, newPrice) => {
+    const updateSalePrice = (_id, newPrice) => {
     const price = parseFloat(newPrice) || 0;
     setCartItems(
       cartItems.map((item) =>
@@ -91,17 +81,45 @@ const POSBillingSystem = () => {
     );
   };
 
-  const updateQuantity = (_id, newQuantity) => {
-    if (newQuantity < 1) {
-      removeItem(_id);
-      return;
+const handleAddToCart = (product) => {
+  setGlobalError("");
+  const existingItem = cartItems.find((item) => item._id === product._id);
+
+  if (existingItem) {
+    if (existingItem.quantity < existingItem.maxStock) {
+      updateQuantity(product._id, existingItem.quantity + 1);
+    } else {
+      setGlobalError("Maximum stock reached for this product");
     }
-    setCartItems(
-      cartItems.map((item) =>
-        item._id === _id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
+  } else {
+    setCartItems([
+      ...cartItems,
+      { ...product, quantity: 1, salePrice: 1.0, maxStock: product.quantity },
+    ]);
+  }
+};
+
+const updateQuantity = (_id, newQuantity) => {
+  const item = cartItems.find((item) => item._id === _id);
+  if (!item) return;
+
+  if (newQuantity > item.maxStock) {
+    setGlobalError("Maximum stock reached for this product");
+    newQuantity = item.maxStock;
+  }
+
+  if (newQuantity < 1) {
+    removeItem(_id);
+    return;
+  }
+
+  setCartItems(
+    cartItems.map((cartItem) =>
+      cartItem._id === _id ? { ...cartItem, quantity: newQuantity } : cartItem
+    )
+  );
+};
+
 
   const removeItem = (_id) => {
     setCartItems(cartItems.filter((item) => item._id !== _id));
@@ -145,7 +163,7 @@ const POSBillingSystem = () => {
     }
   };
 
-const handleGenerateBill = async () => {
+  const handleGenerateBill = async () => {
     setFieldErrors({});
     setGlobalError("");
 
@@ -182,60 +200,85 @@ const handleGenerateBill = async () => {
     try {
       const response = await createBill(payload);
       const bill = {
-        billNo: response.billId || response.data?.billId || `BILL-${Date.now()}`,
-        date: response.createdAt ? new Date(response.createdAt).toLocaleString() : new Date().toLocaleString(),
+        billNo:
+          response.billId || response.data?.billId || `BILL-${Date.now()}`,
+        date: response.createdAt
+          ? new Date(response.createdAt).toLocaleString()
+          : new Date().toLocaleString(),
         items: cartItems,
         subtotal: calculateSubtotal(),
-        discountType, discountValue, discount: calculateDiscount(),
+        discountType,
+        discountValue,
+        discount: calculateDiscount(),
         laborCost: parseFloat(laborCost) || 0,
         total: calculateTotal(),
         customerPaid: parseFloat(customerPay) || 0,
         change: calculateChange(),
         remainingAmount: remaining,
         cashierName: response.data?.staff?.name || "Admin",
-        shift, paymentMode, customerName, customerPhone
+        shift,
+        paymentMode,
+        customerName,
+        customerPhone,
       };
 
       setBillData(bill);
-      if(response.status == 200 || response.status == 201){
+      if (response.status == 200 || response.status == 201) {
         setShowBillPopup(true);
-      }
-      else{
+      } else {
         setShowBillPopup(false);
       }
 
-      setCartItems([]); setDiscountValue(0); setLaborCost(0);
-      setCustomerPay(""); setCustomerName(""); setCustomerPhone("");
-      
+      setCartItems([]);
+      setDiscountValue(0);
+      setLaborCost(0);
+      setCustomerPay("");
+      setCustomerName("");
+      setCustomerPhone("");
     } catch (error) {
       console.error("Error creating bill:", error);
-      
+
       const backendErrors = {};
       const responseData = error.response?.data;
-      
-      // Check if backend sent missingFields array
-      if (responseData?.missingFields && Array.isArray(responseData.missingFields)) {
-        responseData.missingFields.forEach(field => {
+
+      if (
+        responseData?.missingFields &&
+        Array.isArray(responseData.missingFields)
+      ) {
+        responseData.missingFields.forEach((field) => {
           backendErrors[field.name] = field.message;
         });
       } else {
-        // Fallback: parse from message string
-        const backendMsg = responseData?.error || responseData?.message || error.message || "Unknown Error";
-        
-        if (backendMsg.includes("customerName") || backendMsg.toLowerCase().includes("customer name")) {
+        const backendMsg =
+          responseData?.error ||
+          responseData?.message ||
+          error.message ||
+          "Unknown Error";
+
+        if (
+          backendMsg.includes("customerName") ||
+          backendMsg.toLowerCase().includes("customer name")
+        ) {
           backendErrors.customerName = "Customer Name is required";
         }
-        if (backendMsg.includes("customerPhone") || backendMsg.toLowerCase().includes("customer phone")) {
+        if (
+          backendMsg.includes("customerPhone") ||
+          backendMsg.toLowerCase().includes("customer phone")
+        ) {
           backendErrors.customerPhone = "Customer Phone is required";
         }
       }
 
-      // Update State
       if (Object.keys(backendErrors).length > 0) {
         setFieldErrors(backendErrors);
-        setGlobalError(""); // Clear global error when showing field errors
+        setGlobalError("");
       } else {
-        setGlobalError(responseData?.message || responseData?.error || error.message || "Failed to generate bill");
+        setGlobalError(
+          responseData?.message ||
+            responseData?.error ||
+            error.message ||
+            "Failed to generate bill"
+        );
       }
     }
   };
@@ -338,6 +381,7 @@ const handleGenerateBill = async () => {
               <tr>
                 <th>ID</th>
                 <th>Product Name</th>
+                <th>Qunatity</th>
                 <th>Unit Price</th>
                 <th>Sale Price</th>
                 <th>Action</th>
@@ -355,12 +399,35 @@ const handleGenerateBill = async () => {
                   <tr key={product._id}>
                     <td>{product.productId}</td>
                     <td>{product.productName}</td>
+                    <td className="quant-status">
+                      <span
+                        style={{ padding: "5px 10px", borderRadius: "6px" }}
+                      >
+                        {product.quantity === 0 ? (
+                          <>
+                            {product.quantity} <br /> <OutOfStock />
+                          </>
+                        ) : product.quantity < 10 ? (
+                          <>
+                            {product.quantity} <br /> <LowStock />
+                          </>
+                        ) : (
+                          product.quantity
+                        )}
+                      </span>
+                    </td>
                     <td>Rs. {product.unitPrice?.toFixed(2) || "0.00"}</td>
                     <td>Rs. {product.salePrice?.toFixed(2) || "0.00"}</td>
                     <td>
                       <button
                         onClick={() => handleAddToCart(product)}
                         className="btn-select"
+                        disabled={product.quantity === 0}
+                        style={{
+                          cursor:
+                            product.quantity === 0 ? "not-allowed" : "pointer",
+                          opacity: product.quantity === 0 ? 0.5 : 1,
+                        }}
                       >
                         Add
                       </button>

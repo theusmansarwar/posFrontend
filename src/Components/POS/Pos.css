@@ -199,6 +199,7 @@
   padding: 12px;
   border-bottom: 1px solid #e5e7eb;
   font-size: 13px;
+  max-width: 200px;
 }
 
 .products-table tbody tr:hover {
@@ -211,7 +212,9 @@
   padding: 40px !important;
   font-style: italic;
 }
-
+.quant-status{
+  width: 100px;
+}
 .btn-select {
   padding: 6px 12px;
   background: white;
