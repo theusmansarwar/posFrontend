@@ -1,3 +1,3 @@
-export default function LowStock() {
-  return <span className="blink-low">Low-Stock</span>;
+export default function LowStock({style={}}) {
+  return <span className="blink-low" style={style}>Low-Stock</span>;
 }

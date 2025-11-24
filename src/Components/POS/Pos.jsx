@@ -19,6 +19,7 @@ import { createBill } from "../../DAL/create";
 import OutOfStock from "../OutOfStock";
 import LowStock from "../LowStock";
 
+
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
   const [cartItems, setCartItems] = useState([]);
@@ -405,11 +406,11 @@ const updateQuantity = (_id, newQuantity) => {
                       >
                         {product.quantity === 0 ? (
                           <>
-                            {product.quantity} <br /> <OutOfStock />
+                            {product.quantity} <br /> <OutOfStock style={{fontSize:"10px", fontWeight: 500, padding: "3px"}} />
                           </>
                         ) : product.quantity < 10 ? (
                           <>
-                            {product.quantity} <br /> <LowStock />
+                            {product.quantity} <br /> <LowStock style={{fontSize:"10px", fontWeight: 500, padding: "3px"}}/>
                           </>
                         ) : (
                           product.quantity

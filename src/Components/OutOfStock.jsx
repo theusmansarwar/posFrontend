@@ -1,3 +1,3 @@
-export default function OutOfStock() {
-  return <span className="blink-out">Out-of-Stock</span>;
+export default function OutOfStock({style={}}) {
+  return <span className="blink-out" style={style}>Out-of-Stock</span>;
 }
