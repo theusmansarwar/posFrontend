@@ -57,8 +57,8 @@
   --default-p-size: 16px;
   --default-p-size2: 14px;
   --default-border-radius: 6px;
-  --warning-color: rgb(255, 38, 0);
   --warning-bgcolor: rgba(255, 38, 0, 0.426);
+   --accent-bgcolor: #f78f0856;
   --success-color: rgb(0, 101, 0);
   --success-bgcolor: rgba(2, 216, 2, 0.512);
 }
@@ -353,4 +353,29 @@ p, h1, h2, h3, h4, h5, h6 {
     overflow-y: scroll;
     scrollbar-width: none;
   }
+}
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.blink-low {
+  color: var(--accent-color);
+  background-color: var(--accent-bgcolor);
+  padding: 5px;
+  border-radius: 8px;
+  font-size: 12px;
+  animation: blink 1.5s infinite;
+  font-weight: 600;
+}
+
+.blink-out {
+  color: var(--warning-color);
+   background-color: var(--warning-bgcolor);
+  animation: blink 1.5s infinite;
+  font-weight: 600;
+  padding: 5px;
+  border-radius: 8px;
+  font-size: 12px;
 }

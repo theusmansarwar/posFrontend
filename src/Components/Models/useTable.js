@@ -20,11 +20,26 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { fetchallroleslist, fetchallStocklist, fetchalluserlist, fetchallExpenselist, fetchallBilllist, fetchSaleslist, fetchPendingAmount } from "../../DAL/fetch";
+import {
+  fetchallroleslist,
+  fetchallStocklist,
+  fetchalluserlist,
+  fetchallExpenselist,
+  fetchallBilllist,
+  fetchSaleslist,
+  fetchPendingAmount,
+} from "../../DAL/fetch";
 import { formatDate } from "../../Utils/Formatedate";
 import truncateText from "../../truncateText";
 import { useNavigate } from "react-router-dom";
-import { deleteAllRoles, deleteAllStock, deleteAllUsers, deleteAllExpense, deleteAllBills, deleteAllPendingAmount } from "../../DAL/delete";
+import {
+  deleteAllRoles,
+  deleteAllStock,
+  deleteAllUsers,
+  deleteAllExpense,
+  deleteAllBills,
+  deleteAllPendingAmount,
+} from "../../DAL/delete";
 import { useAlert } from "../Alert/AlertContext";
 import DeleteModal from "./confirmDeleteModel";
 import AddUsers from "./addUsers";
@@ -37,6 +52,10 @@ import SalesReportModal from "./SalesReportModal";
 import Reports from "./AddReports";
 import PendingAmountPage from "../../Pages/Pending Amount/PendingAmountPage";
 import AddPendingAmount from "./AddPendingAmount";
+import OutOfStock from "../OutOfStock";
+import LowStock from "../LowStock";
+
+
 
 export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const { showAlert } = useAlert(); // Since you created a custom hook
@@ -180,7 +199,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(0);
         setIsLoading(false);
       }
-    }else if (tableType === "Sales Report") {
+    } else if (tableType === "Sales Report") {
       response = await fetchSaleslist(page, rowsPerPage, searchQuery);
       if (response.status === 400) {
         localStorage.removeItem("Token");
@@ -190,9 +209,8 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setIsLoading(false);
         setData(response.data);
         setTotalRecords(response.totalRecords);
-      } 
-    }
-      else if (tableType === "Pending Amount") {
+      }
+    } else if (tableType === "Pending Amount") {
       response = await fetchPendingAmount(page, rowsPerPage, searchQuery);
       if (response.status === 400) {
         localStorage.removeItem("Token");
@@ -202,9 +220,8 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setIsLoading(false);
         setData(response.data);
         setTotalRecords(response.totalRecords);
-      } 
-    }
-    else {
+      }
+    } else {
       // default fallback
       setIsLoading(false);
       setData([]);
@@ -213,7 +230,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   };
 
   const handleSelectAllClick = (event) => {
-    setSelected(event.target.checked ? data.map((row) => row._id || row.id || row.id) : []);
+    setSelected(
+      event.target.checked ? data.map((row) => row._id || row.id || row.id) : []
+    );
   };
 
   const isSelected = (id) => selected.includes(id);
@@ -258,16 +277,14 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
       setOpenReportsModal(true);
       setModelData(category);
       setModeltype("View"); // viewing a saved report
-    }
-    else if (tableType === "Sales Report") {
+    } else if (tableType === "Sales Report") {
       setOpenSalesReportModal(true);
       setModelData(category);
-      setModeltype("Update");  
-    }
-     else if (tableType === "Pending Amount") {
+      setModeltype("Update");
+    } else if (tableType === "Pending Amount") {
       setOpenPendingAmountModal(true);
       setModelData(category);
-      setModeltype("Update");  
+      setModeltype("Update");
     }
   };
   const handleAddNew = (category) => {
@@ -305,14 +322,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         fetchData();
         setSelected([]);
         return;
-      }
-      else if (tableType === "Sales Report") {
+      } else if (tableType === "Sales Report") {
         response = await deleteAllExpense({ ids: selected });
-      }
-        else if (tableType === "Pending Amount") {
+      } else if (tableType === "Pending Amount") {
         response = await deleteAllPendingAmount({ ids: selected });
       }
-
 
       if (response && response.status === 200) {
         showAlert("success", response.message || "Deleted successfully");
@@ -360,7 +374,10 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const getNestedValue = (obj, path) => {
     return path
       .split(".")
-      .reduce((acc, key) => (acc && acc[key] !== undefined ? acc[key] : "N/A"), obj);
+      .reduce(
+        (acc, key) => (acc && acc[key] !== undefined ? acc[key] : "N/A"),
+        obj
+      );
   };
 
   const handleResponse = (response) => {
@@ -428,7 +445,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
           />
         )}
 
-        {openReportsModal   && (
+        {openReportsModal && (
           <Reports
             open={openReportsModal}
             setOpen={setOpenReportsModal}
@@ -438,22 +455,22 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
           />
         )}
 
-        {openSalesReportModal  && (
-        <SalesReportModal
-          open={openSalesReportModal}
-          setOpen={setOpenSalesReportModal}
-          Modeldata={modelData} 
-           onResponse={handleResponse} 
-        />
-      )}
-      {openPendingAmountModal  && (
-        <AddPendingAmount
-          open={openPendingAmountModal}
-          setOpen={setOpenPendingAmountModal}
-          Modeldata={modelData}  
-           onResponse={handleResponse}
-        />
-      )}
+        {openSalesReportModal && (
+          <SalesReportModal
+            open={openSalesReportModal}
+            setOpen={setOpenSalesReportModal}
+            Modeldata={modelData}
+            onResponse={handleResponse}
+          />
+        )}
+        {openPendingAmountModal && (
+          <AddPendingAmount
+            open={openPendingAmountModal}
+            setOpen={setOpenPendingAmountModal}
+            Modeldata={modelData}
+            onResponse={handleResponse}
+          />
+        )}
 
         <DeleteModal
           open={openDeleteModal}
@@ -474,7 +491,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                 variant="outlined"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && setDebouncedSearch(searchQuery)}
+                onKeyPress={(e) =>
+                  e.key === "Enter" && setDebouncedSearch(searchQuery)
+                }
                 sx={{
                   minWidth: 200,
                   backgroundColor: "white",
@@ -509,7 +528,10 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                   <DeleteIcon />
                 </IconButton>
               ) : (
-                tableType !== "CategoriesNames" && tableType !== "Bill History" && tableType !== "Sales Report" &&tableType !== "Pending Amount" &&(
+                tableType !== "CategoriesNames" &&
+                tableType !== "Bill History" &&
+                tableType !== "Sales Report" &&
+                tableType !== "Pending Amount" && (
                   <Button
                     sx={{
                       background: "var(--horizontal-gradient)",
@@ -549,8 +571,8 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                         whiteSpace: "nowrap",
                       },
 
-                      //  Custom widths for columns 3, 
-                     
+                      //  Custom widths for columns 3,
+
                       "& th:nth-of-type(3), & td:nth-of-type(3)": {
                         minWidth: "160px",
                       },
@@ -562,8 +584,12 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                           color: "white",
                           "&.Mui-checked": { color: "white" },
                         }}
-                        indeterminate={selected.length > 0 && selected.length < data.length}
-                        checked={data.length > 0 && selected.length === data.length}
+                        indeterminate={
+                          selected.length > 0 && selected.length < data.length
+                        }
+                        checked={
+                          data.length > 0 && selected.length === data.length
+                        }
                         onChange={handleSelectAllClick}
                       />
                     </TableCell>
@@ -573,14 +599,20 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                     ))}
 
                     <TableCell>Action</TableCell>
-                    {tableType === "Stock" && <TableCell>Add New Stock</TableCell>}
+                    {tableType === "Stock" && (
+                      <TableCell>Add New Stock</TableCell>
+                    )}
                   </TableRow>
                 </TableHead>
 
-                <TableBody >
+                <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={attributes.length + 2} align="center" sx={{ py: 8 }}>
+                      <TableCell
+                        colSpan={attributes.length + 2}
+                        align="center"
+                        sx={{ py: 8 }}
+                      >
                         <Box
                           sx={{
                             display: "flex",
@@ -623,9 +655,14 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                     </TableRow>
                   ) : (
                     data.map((row) => {
-                      const isItemSelected = isSelected(row._id || row.id || row.id);
+                      const isItemSelected = isSelected(
+                        row._id || row.id || row.id
+                      );
                       return (
-                        <TableRow key={row._id || row.id || row.id} selected={isItemSelected}>
+                        <TableRow
+                          key={row._id || row.id || row.id}
+                          selected={isItemSelected}
+                        >
                           {/* Checkbox column */}
                           <TableCell padding="checkbox">
                             <Checkbox
@@ -634,7 +671,9 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                               onChange={() => {
                                 setSelected((prev) =>
                                   isItemSelected
-                                    ? prev.filter((id) => id !== (row._id || row.id))
+                                    ? prev.filter(
+                                        (id) => id !== (row._id || row.id)
+                                      )
                                     : [...prev, row._id || row.id]
                                 );
                               }}
@@ -645,17 +684,20 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                           {attributes.map((attr) => (
                             <TableCell
                               key={attr.id}
-                              sx={{ color: "var(--black-color)", minWidth: "110px" }}
+                              sx={{
+                                color: "var(--black-color)",
+                                minWidth: "110px",
+                              }}
                             >
                               {attr.id === "createdAt" ||
-                                attr.id === "publishedDate" ||
-                                attr.id === "assignDate" ||
-                                attr.id === "resolvedDate" ||
-                                attr.id === "reportedDate" ||
-                                attr.id === "expiryDate" ||
-                                attr.id === "currentDate" ||
-                                attr.id === "lastSoldAt"||
-                                attr.id === "warrantyDate" ? (
+                              attr.id === "publishedDate" ||
+                              attr.id === "assignDate" ||
+                              attr.id === "resolvedDate" ||
+                              attr.id === "reportedDate" ||
+                              attr.id === "expiryDate" ||
+                              attr.id === "currentDate" ||
+                              attr.id === "lastSoldAt" ||
+                              attr.id === "warrantyDate" ? (
                                 formatDate(row[attr.id])
                               ) : attr.id === "published" ? (
                                 <span
@@ -667,10 +709,32 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                                       ? "var(--success-bgcolor)"
                                       : "var(--warning-bgcolor)",
                                     padding: "5px 10px",
-                                    borderRadius: "var(--border-radius-secondary)",
+                                    borderRadius:
+                                      "var(--border-radius-secondary)",
                                   }}
                                 >
                                   {row[attr.id] ? "Public" : "Private"}
+                                </span>
+                              ) : attr.id === "quantity" ? (
+                                <span
+                                  style={{
+                                    padding: "5px 10px",
+                                    borderRadius:
+                                      "var(--border-radius-secondary)",
+                                  }}
+                                >
+                                  {row[attr.id] === 0 ? (
+                                    <>
+                                      {row[attr.id]}
+                                      <br /> <OutOfStock />
+                                    </>
+                                  ) : row[attr.id] < 10 ? (
+                                    <>
+                                      {row[attr.id]} <br /> <LowStock />
+                                    </>
+                                  ) : (
+                                    row[attr.id]
+                                  )}
                                 </span>
                               ) : attr.id === "status" ? (
                                 (() => {
@@ -714,7 +778,8 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                                         color: textColor,
                                         background: bgColor,
                                         padding: "5px 10px",
-                                        borderRadius: "var(--border-radius-secondary)",
+                                        borderRadius:
+                                          "var(--border-radius-secondary)",
                                         fontWeight: "bold",
                                       }}
                                     >
@@ -724,7 +789,8 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
                                 })()
                               ) : row[attr.id] === 0 ? (
                                 0
-                              ) : typeof getNestedValue(row, attr.id) === "string" ? (
+                              ) : typeof getNestedValue(row, attr.id) ===
+                                "string" ? (
                                 truncateText(getNestedValue(row, attr.id), 30)
                               ) : (
                                 getNestedValue(row, attr.id)
