@@ -72,9 +72,9 @@ export const fetchalluserlist = async (page, rowsPerPages, searchQuery) => {
   return invokeApi(reqObj);
 };
 
-export const fetchallStocklist = async (page, rowsPerPages, searchQuery) => {
+export const fetchallStocklist = async (page, rowsPerPages, searchQuery,filter) => {
   const reqObj = {
-    path: `/stock/list?limit=${rowsPerPages}&page=${page}&keyword=${searchQuery}`,
+    path: `/stock/list?limit=${rowsPerPages}&page=${page}&keyword=${searchQuery}&filter=${filter}`,
     method: "GET",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("Token")}`,

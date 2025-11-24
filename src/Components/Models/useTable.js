@@ -55,9 +55,7 @@ import AddPendingAmount from "./AddPendingAmount";
 import OutOfStock from "../OutOfStock";
 import LowStock from "../LowStock";
 
-
-
-export function useTable({ attributes, tableType, limitPerPage = 10 }) {
+export function useTable({ attributes, tableType, limitPerPage = 25 }) {
   const { showAlert } = useAlert(); // Since you created a custom hook
   const savedState =
     JSON.parse(localStorage.getItem(`${tableType}-tableState`)) || {};
@@ -84,10 +82,11 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
   const [modelData, setModelData] = useState({});
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+  const [stockFilter, setStockFilter] = useState("none");
 
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, debouncedSearch]);
+  }, [page, rowsPerPage, debouncedSearch, stockFilter]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -132,16 +131,16 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
         setTotalRecords(response.totalUsers);
       }
     } else if (tableType === "Stock") {
-      response = await fetchallStocklist(page, rowsPerPage, searchQuery);
+      response = await fetchallStocklist(page, rowsPerPage, searchQuery,stockFilter);
       if (response.status === 400) {
         localStorage.removeItem("Token");
         navigate("/login");
-        setIsLoading(false);
       } else {
-        setIsLoading(false);
         setData(response.data);
         setTotalRecords(response.totalRecords);
       }
+
+      setIsLoading(false);
     } else if (tableType === "Expense") {
       response = await fetchallExpenselist(page, rowsPerPage, searchQuery);
       if (response.status === 400) {
@@ -484,68 +483,86 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
               <Typography variant="h5" sx={{ color: "var(--primary-color)" }}>
                 {tableType} List
               </Typography>
-
-              <TextField
-                size="small"
-                placeholder="Search..."
-                variant="outlined"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) =>
-                  e.key === "Enter" && setDebouncedSearch(searchQuery)
-                }
-                sx={{
-                  minWidth: 200,
-                  backgroundColor: "white",
-                  borderRadius: 1,
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": {
-                      borderColor: "var(--background-color)",
+              <Box sx={{ display: "flex", gap: "10px" }}>
+                <TextField
+                  size="small"
+                  placeholder="Search..."
+                  variant="outlined"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && setDebouncedSearch(searchQuery)
+                  }
+                  sx={{
+                    minWidth: 200,
+                    backgroundColor: "white",
+                    borderRadius: 1,
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": {
+                        borderColor: "var(--background-color)",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "var(--background-color)",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "var(--background-color)",
+                      },
                     },
-                    "&:hover fieldset": {
-                      borderColor: "var(--background-color)",
-                    },
-                    "&.Mui-focused fieldset": {
-                      borderColor: "var(--background-color)",
-                    },
-                  },
-                }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <SearchIcon
-                        sx={{
-                          cursor: "pointer",
-                          color: "var(--background-color)",
-                        }}
-                      />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {selected.length > 0 ? (
-                <IconButton onClick={handleDeleteClick} sx={{ color: "red" }}>
-                  <DeleteIcon />
-                </IconButton>
-              ) : (
-                tableType !== "CategoriesNames" &&
-                tableType !== "Bill History" &&
-                tableType !== "Sales Report" &&
-                tableType !== "Pending Amount" && (
-                  <Button
-                    sx={{
-                      background: "var(--horizontal-gradient)",
-                      color: "var(--white-color)",
-                      borderRadius: "var(--border-radius-secondary)",
-                      "&:hover": { background: "var(--vertical-gradient)" },
-                      textTransform: "none",
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <SearchIcon
+                          sx={{
+                            cursor: "pointer",
+                            color: "var(--background-color)",
+                          }}
+                        />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                {tableType === "Stock" && (
+                  <TextField
+                    select
+                    size="small"
+                    value={stockFilter}
+                    onChange={(e) => {
+                      setStockFilter(e.target.value);
+                      setPage(1); // reset pagination for filter change
                     }}
-                    onClick={handleAddButton}
+                    SelectProps={{ native: true }}
+                    sx={{ width: 180, background: "white", borderRadius: 1 }}
                   >
-                    Add New {tableType}
-                  </Button>
-                )
-              )}
+                    <option value="all">All Stock</option>
+                    <option value="out-of-stock">Out of Stock</option>
+                    <option value="low-stock">Low Stock</option>
+                  </TextField>
+                )}
+                {selected.length > 0 ? (
+                  <IconButton onClick={handleDeleteClick} sx={{ color: "red" }}>
+                    <DeleteIcon />
+                  </IconButton>
+                ) : (
+                  tableType !== "CategoriesNames" &&
+                  tableType !== "Bill History" &&
+                  tableType !== "Sales Report" &&
+                  tableType !== "Pending Amount" && (
+                    <Button
+                      sx={{
+                        background: "var(--horizontal-gradient)",
+                        color: "var(--white-color)",
+                        borderRadius: "var(--border-radius-secondary)",
+                        "&:hover": { background: "var(--vertical-gradient)" },
+                        textTransform: "none",
+                      }}
+                      onClick={handleAddButton}
+                    >
+                      Add New {tableType}
+                    </Button>
+                  )
+                )}
+              </Box>
             </Toolbar>
             <TableContainer>
               <Table stickyHeader>
@@ -844,7 +861,7 @@ export function useTable({ attributes, tableType, limitPerPage = 10 }) {
               </Table>
             </TableContainer>
             <TablePagination
-              rowsPerPageOptions={[5, 10, 25]}
+              rowsPerPageOptions={[25, 50, 100]}
               component="div"
               count={totalRecords} //  Correct count from API or localStorage
               rowsPerPage={rowsPerPage}
