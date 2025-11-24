@@ -138,16 +138,16 @@ const ProductSalesReports = () => {
       const excelData = [];
 
       // Add header information
-      excelData.push(["Ibrahim Autos & Wholesale"]);
-      excelData.push([`Product Sales Report - ${currentTabLabel}`]);
-      excelData.push([`Generated on: ${currentDate}`]);
+      // excelData.push(["Ibrahim Autos & Wholesale"]);
+      // excelData.push([`Product Sales Report - ${currentTabLabel}`]);
+      // excelData.push([`Generated on: ${currentDate}`]);
       if (searchQuery) {
         excelData.push([`Search Filter: "${searchQuery}"`]);
       }
       excelData.push([]); // Empty row
 
       // Add summary statistics
-      excelData.push(["Summary"]);
+      // excelData.push(["Summary"]);
       excelData.push(["Total Products", reportData.length]);
       excelData.push(["Total Quantity", totalQuantity]);
       excelData.push(["Total Cost", `PKR ${totalCost.toLocaleString()}`]);
@@ -170,8 +170,8 @@ const ProductSalesReports = () => {
         ]);
       });
 
-      excelData.push([]); // Empty row
-      excelData.push(["Software Powered by Zemalt PVT LTD | Contact: 03285522005"]);
+      // excelData.push([]); // Empty row
+      // excelData.push(["Software Powered by Zemalt PVT LTD | Contact: 03285522005"]);
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet(excelData);
