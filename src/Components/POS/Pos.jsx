@@ -73,7 +73,7 @@ const POSBillingSystem = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchId]);
 
-    const updateSalePrice = (_id, newPrice) => {
+  const updateSalePrice = (_id, newPrice) => {
     const price = parseFloat(newPrice) || 0;
     setCartItems(
       cartItems.map((item) =>
@@ -82,44 +82,44 @@ const POSBillingSystem = () => {
     );
   };
 
-const handleAddToCart = (product) => {
-  setGlobalError("");
-  const existingItem = cartItems.find((item) => item._id === product._id);
+  const handleAddToCart = (product) => {
+    setGlobalError("");
+    const existingItem = cartItems.find((item) => item._id === product._id);
 
-  if (existingItem) {
-    if (existingItem.quantity < existingItem.maxStock) {
-      updateQuantity(product._id, existingItem.quantity + 1);
+    if (existingItem) {
+      if (existingItem.quantity < existingItem.maxStock) {
+        updateQuantity(product._id, existingItem.quantity + 1);
+      } else {
+        setGlobalError("Maximum stock reached for this product");
+      }
     } else {
-      setGlobalError("Maximum stock reached for this product");
+      setCartItems([
+        ...cartItems,
+        { ...product, quantity: 1, salePrice: 1.0, maxStock: product.quantity },
+      ]);
     }
-  } else {
-    setCartItems([
-      ...cartItems,
-      { ...product, quantity: 1, salePrice: 1.0, maxStock: product.quantity },
-    ]);
-  }
-};
+  };
 
-const updateQuantity = (_id, newQuantity) => {
-  const item = cartItems.find((item) => item._id === _id);
-  if (!item) return;
+  const updateQuantity = (_id, newQuantity) => {
+    const item = cartItems.find((item) => item._id === _id);
+    if (!item) return;
 
-  if (newQuantity > item.maxStock) {
-    setGlobalError("Maximum stock reached for this product");
-    newQuantity = item.maxStock;
-  }
+    if (newQuantity > item.maxStock) {
+      setGlobalError("Maximum stock reached for this product");
+      newQuantity = item.maxStock;
+    }
 
-  if (newQuantity < 1) {
-    removeItem(_id);
-    return;
-  }
+    if (newQuantity < 1) {
+      removeItem(_id);
+      return;
+    }
 
-  setCartItems(
-    cartItems.map((cartItem) =>
-      cartItem._id === _id ? { ...cartItem, quantity: newQuantity } : cartItem
-    )
-  );
-};
+    setCartItems(
+      cartItems.map((cartItem) =>
+        cartItem._id === _id ? { ...cartItem, quantity: newQuantity } : cartItem
+      )
+    );
+  };
 
 
   const removeItem = (_id) => {
@@ -276,62 +276,234 @@ const updateQuantity = (_id, newQuantity) => {
       } else {
         setGlobalError(
           responseData?.message ||
-            responseData?.error ||
-            error.message ||
-            "Failed to generate bill"
+          responseData?.error ||
+          error.message ||
+          "Failed to generate bill"
         );
       }
     }
   };
   const handlePrint = () => {
-    const logoElement = billRef.current?.querySelector(".company-logo");
-    const logoSrc = logoElement?.src || logoo;
 
     const printWindow = window.open("", "", "width=800,height=600");
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
       <head>
+        <title>Bill-${billData?.billNo}</title>
         <style>
-          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-          .receipt { max-width: 400px; margin: 0 auto; }
-          .receipt-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a8a; padding-bottom: 15px; }
-          .company-logo { width: 70px; height: 70px; object-fit: contain; margin-bottom: 10px; }
-          .receipt-header h2 { margin: 0 0 10px 0; color: #1e3a8a; font-size: 22px; }
-          .receipt-header p { margin: 4px 0; font-size: 12px; }
-          .receipt-info { margin-bottom: 20px; font-size: 12px; }
-          .receipt-info p { margin: 4px 0; }
-          .Bill-date { display: flex; flex-direction: column; align-items: center; margin-bottom: 8px; }
-          .Cashier-info { display: flex; justify-content: space-between; margin-bottom: 8px; }
-          .customer-info-section { border-top: 1px dashed #ccc; padding-top: 5px; margin-top: 5px; }
-          table { width: 100%; border-collapse: collapse; margin: 15px 0; border: 1px solid #e5e7eb; }
-          th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 12px; }
-          th { background: #f3f4f6; border-bottom: 2px solid #1e3a8a; }
-          tbody tr { background: #fef3c7; }
-          tbody tr:nth-child(even) { background: #fde68a; }
-          .receipt-summary { border-top: 2px solid #1e3a8a; padding-top: 15px; }
-          .summary-line { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
-          .summary-line:last-child { border-bottom: none; }
-          .summary-line.total { font-size: 17px; font-weight: 700; color: #1e3a8a; margin-top: 10px; padding-top: 10px; border-top: 2px solid #e5e7eb; }
-          .savings-highlight { color: #059669; font-weight: 600; background: #d1fae5; padding: 8px; border-radius: 3px; margin: 5px 0; }
-          .labor-highlight { color: #0369a1; font-weight: 600; background: #e0f2fe; padding: 8px; border-radius: 3px; margin: 5px 0; }
-          .receipt-footer { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid #1e3a8a; }
-          .receipt-footer p { margin: 4px 0; font-size: 12px; }
-          .watermark { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #d1d5db; }
-          .watermark p { margin: 2px 0; font-size: 11px; color: #9ca3af; }
-          .watermark strong { color: #1e3a8a; font-size: 12px; }
+          @page { margin: 0; }
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 10mm;
+            display: flex;
+            justify-content: center;
+          }
+          .receipt { 
+            max-width: 80mm; 
+            width: 100%;
+          }
+          .receipt-header { 
+            text-align: center; 
+            margin-bottom: 12px; 
+            border-bottom: 2px solid #000; 
+            padding-bottom: 10px; 
+          }
+          .company-logo { 
+            width: 50px; 
+            height: 50px; 
+            object-fit: contain; 
+            margin-bottom: 8px; 
+          }
+          .receipt-header h2 { 
+            margin: 0 0 6px 0; 
+            color: #000; 
+            font-size: 16px; 
+            font-weight: 700;
+          }
+          .receipt-header p { 
+            margin: 2px 0; 
+            font-size: 11px; 
+          }
+          .receipt-info { 
+            margin-bottom: 12px; 
+            font-size: 11px; 
+          }
+          .receipt-info p { 
+            margin: 3px 0; 
+          }
+          .Bill-date { 
+            text-align: center; 
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #999;
+          }
+          .payment-info { 
+            text-align: center; 
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #999;
+          }
+          .customer-info-section { 
+            padding-top: 6px; 
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 10px 0; 
+          }
+          th, td { 
+            padding: 5px 3px; 
+            text-align: left; 
+            font-size: 11px; 
+          }
+          th { 
+            border-bottom: 1px solid #000; 
+            font-weight: 600;
+          }
+          td {
+            border-bottom: 1px dashed #ccc;
+          }
+          .receipt-summary { 
+            border-top: 2px solid #000; 
+            padding-top: 8px; 
+            margin-top: 8px;
+          }
+          .summary-line { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 4px 0; 
+            font-size: 12px; 
+          }
+          .summary-line.total { 
+            font-size: 15px; 
+            font-weight: 700; 
+            margin-top: 6px; 
+            padding-top: 6px; 
+            border-top: 1px solid #000; 
+          }
+          .labor-highlight { 
+            font-weight: 600; 
+            padding: 4px 0; 
+          }
+          .receipt-footer { 
+            text-align: center; 
+            margin-top: 12px; 
+            padding-top: 10px; 
+            border-top: 2px solid #000; 
+          }
+          .receipt-footer p { 
+            margin: 3px 0; 
+            font-size: 11px; 
+          }
+          .watermark { 
+            margin-top: 10px; 
+            padding-top: 8px; 
+            border-top: 1px dashed #999; 
+          }
+          .watermark p { 
+            margin: 2px 0; 
+            font-size: 10px; 
+            color: #666; 
+          }
+          .watermark strong { 
+            color: #000; 
+            font-size: 11px; 
+          }
+          .phone-contact { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 5px; 
+            margin-top: 3px; 
+          }
         </style>
       </head>
       <body>
-        <div class="receipt-header">
-          <img src="${logoSrc}" alt="Company Logo" class="company-logo" />
-          <h2>Ibrahim Autos & Wholesale</h2>
-          <p>Phone: 0307-8694372</p>
+        <div class="receipt">
+          <div class="receipt-header">
+            <img src="/logoo.jpg" alt="Logo" class="company-logo" />
+            <h2>Ibrahim Autos & Wholesale</h2>
+            <p>Phone: 0307-8694372</p>
+          </div>
+          
+          <div class="receipt-info">
+            <div class="Bill-date">
+              <p><strong>Bill No:</strong> ${billData.billNo}</p>
+              <p><strong>Date:</strong> ${billData.date}</p>
+            </div>
+            <div class="payment-info">
+              <p><strong>Payment:</strong> ${billData.paymentMode.toUpperCase()}</p>
+            </div>
+            <div class="customer-info-section">
+              <p><strong>Customer:</strong> ${billData.customerName}</p>
+              <p><strong>Phone:</strong> ${billData.customerPhone}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${billData.items.map(item => `
+                <tr>
+                  <td>${item.productName}</td>
+                  <td>${item.quantity}</td>
+                  <td>Rs. ${item.salePrice?.toFixed(2)}</td>
+                  <td>Rs. ${(item.salePrice * item.quantity).toFixed(2)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="receipt-summary">
+            <div class="summary-line">
+              <span>Subtotal:</span>
+              <span>Rs. ${billData.subtotal.toFixed(2)}</span>
+            </div>
+            ${billData.laborCost > 0 ? `
+              <div class="summary-line labor-highlight">
+                <span>Labor Cost:</span>
+                <span>+Rs. ${billData.laborCost.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            <div class="summary-line total">
+              <span>Total:</span>
+              <span>Rs. ${billData.total.toFixed(2)}</span>
+            </div>
+            <div class="summary-line">
+              <span>Paid:</span>
+              <span>Rs. ${billData.customerPaid.toFixed(2)}</span>
+            </div>
+            <div class="summary-line">
+              <span>Change:</span>
+              <span>Rs. ${billData.change.toFixed(2)}</span>
+            </div>
+            <div class="summary-line">
+              <span>Remaining:</span>
+              <span>Rs. ${billData.remainingAmount.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="receipt-footer">
+            <p>Thank you for your purchase!</p>
+            <p>Visit again</p>
+            <div class="watermark">
+              <p>Software Powered by</p>
+              <p><strong>Zemalt PVT LTD</strong></p>
+              <p class="phone-contact">
+                <span>📞 03285522005</span>
+              </p>
+            </div>
+          </div>
         </div>
-        ${billRef.current.querySelector(".receipt-info").outerHTML}
-        ${billRef.current.querySelector(".receipt-table").outerHTML}
-        ${billRef.current.querySelector(".receipt-summary").outerHTML}
-        ${billRef.current.querySelector(".receipt-footer").outerHTML}
       </body>
       </html>
     `);
@@ -406,11 +578,11 @@ const updateQuantity = (_id, newQuantity) => {
                       >
                         {product.quantity === 0 ? (
                           <>
-                            {product.quantity} <br /> <OutOfStock style={{fontSize:"10px", fontWeight: 500, padding: "3px"}} />
+                            {product.quantity} <br /> <OutOfStock style={{ fontSize: "10px", fontWeight: 500, padding: "3px" }} />
                           </>
                         ) : product.quantity < 10 ? (
                           <>
-                            {product.quantity} <br /> <LowStock style={{fontSize:"10px", fontWeight: 500, padding: "3px"}}/>
+                            {product.quantity} <br /> <LowStock style={{ fontSize: "10px", fontWeight: 500, padding: "3px" }} />
                           </>
                         ) : (
                           product.quantity
@@ -651,9 +823,8 @@ const updateQuantity = (_id, newQuantity) => {
                     setCustomerName(e.target.value);
                     clearError("customerName");
                   }}
-                  className={`discount-input ${
-                    fieldErrors.customerName ? "input-error" : ""
-                  }`}
+                  className={`discount-input ${fieldErrors.customerName ? "input-error" : ""
+                    }`}
                   placeholder="Enter customer name"
                 />
                 {fieldErrors.customerName && (
@@ -674,9 +845,8 @@ const updateQuantity = (_id, newQuantity) => {
                     setCustomerPhone(e.target.value);
                     clearError("customerPhone");
                   }}
-                  className={`discount-input ${
-                    fieldErrors.customerPhone ? "input-error" : ""
-                  }`}
+                  className={`discount-input ${fieldErrors.customerPhone ? "input-error" : ""
+                    }`}
                   placeholder="Enter phone number"
                 />
                 {fieldErrors.customerPhone && (
