@@ -85,6 +85,14 @@ export const exportDashboardPDF = (dashboardData) => {
     ["Last Month", dashboardData.labourCost.lastMonth],
     ["Total Labour Cost", dashboardData.labourCost.totalLabourCost],
   ]);
+  insertTable("Tunning Cost Overview", [
+    ["Today", dashboardData.tunningCost.today],
+    ["Yesterday", dashboardData.tunningCost.yesterday],
+    ["This Week", dashboardData.tunningCost.thisWeek],
+    ["This Month", dashboardData.tunningCost.thisMonth],
+    ["Last Month", dashboardData.tunningCost.lastMonth],
+    ["Total Tunning Cost", dashboardData.tunningCost.totalTunningCost],
+  ]);
 
   insertTable("Pending Amount Summary", [
     ["Pending Amount", dashboardData.pendingAmount],

@@ -7,6 +7,8 @@ import "./Dashboard.css";
 import { fetchDashboard } from "../../DAL/fetch";
 import { exportDashboardPDF } from "../../Utils/ExportPdf";
 import { useNavigate } from "react-router-dom";
+import { TbMotorbike } from "react-icons/tb";
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -124,6 +126,15 @@ const Dashboard = () => {
               {formatPKR(dashboardData.labourCost.totalLabourCost)}
             </div>
           </div>
+          <div className="dashboard-card card-gray">
+            <div className="card-header">
+              <TbMotorbike size={24} />
+              <span>Total Tunning Cost</span>
+            </div>
+            <div className="card-value">
+              {formatPKR(dashboardData.tunningCost.totalTunningCost)}
+            </div>
+          </div>
         </div>
 
         {/* Main Sections */}
@@ -176,6 +187,31 @@ const Dashboard = () => {
                 </div>
               ))}
             </div>
+
+            {/* /////////////////// Tunning Cost Overview //////////////////// */}
+            <div className="section-header tunning">
+             <TbMotorbike size={24} />
+              <div>
+                <h2>Tunning Cost Overview</h2>
+                <p>Track and monitor Tunning cost</p>
+              </div>
+            </div>
+
+            <div className="metrics-grid">
+              {[
+                { label: "Today", value: dashboardData.tunningCost.today },
+                { label: "Yesterday", value: dashboardData.tunningCost.yesterday },
+                { label: "This Week", value: dashboardData.tunningCost.thisWeek },
+                { label: "This Month", value: dashboardData.tunningCost.thisMonth },
+                { label: "Last Month", value: dashboardData.tunningCost.lastMonth },
+              ].map((item) => (
+                <div key={item.label} className="metric-card">
+                  <div className="metric-label">{item.label}</div>
+                  <div className="metric-value">{formatPKR(item.value)}</div>
+                </div>
+              ))}
+            </div>
+
 
 
           </div>

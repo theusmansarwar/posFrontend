@@ -25,10 +25,11 @@ export default function AddStock({
   const [productName, setProductName] = useState(Modeldata?.productName || "");
   const [supplier, setSupplier] = useState(Modeldata?.supplier || "");
   const [rackNo, setRackNo] = useState(Modeldata?.rackNo || "");
-  const [quantity, setQuantity] = useState(Modeldata?.quantity || "");
-  const [unitPrice, setUnitPrice] = useState(Modeldata?.unitPrice || "");
-  const [salePrice, setSalePrice] = useState(Modeldata?.salePrice || "");
-  const [totalPrice, setTotalPrice] = useState(Modeldata?.totalPrice || "");
+  const [quantity, setQuantity] = useState(Modeldata?.quantity ?? 0);
+  const [unitPrice, setUnitPrice] = useState(Modeldata?.unitPrice ?? 0);
+  const [salePrice, setSalePrice] = useState(Modeldata?.salePrice ?? 0);
+  const [totalPrice, setTotalPrice] = useState(Modeldata?.totalPrice ?? 0);
+
   const [purchaseDate, setPurchaseDate] = useState(Modeldata?.createdAt || "");
   const [warranty, setWarranty] = useState(Modeldata?.warranty || "");
   const [id, setId] = useState(Modeldata?._id || "");
@@ -67,50 +68,54 @@ export default function AddStock({
   // Handle Unit Price change and auto-calc Total
   const handleUnitPriceChange = (e) => {
     const value = e.target.value;
-    setUnitPrice(value);
 
-    if (!value || value === "") {
-      setTotalPrice("");
+    if (!value || Number(value) < 0) {
+      setUnitPrice(0);
+      setTotalPrice(quantity * 0);
       return;
     }
 
-    if (quantity && value) {
-      setTotalPrice(quantity * value);
-    }
+    setUnitPrice(value);
+    setTotalPrice(quantity * value);
   };
 
-  // Handle Total Price change and auto-calc Unit Price
+
   const handleTotalPriceChange = (e) => {
     const value = e.target.value;
-    setTotalPrice(value);
 
-    if (!value || value === "") {
-      setUnitPrice("");
+    if (!value || Number(value) < 0) {
+      setTotalPrice(0);
+      if (quantity > 0) setUnitPrice(0);
       return;
     }
 
-    if (quantity && value) {
+    setTotalPrice(value);
+
+    if (quantity > 0) {
       setUnitPrice(value / quantity);
     }
   };
 
-  // Handle Quantity change and auto-update totals accordingly
+
   const handleQuantityChange = (e) => {
     const value = e.target.value;
-    setQuantity(value);
 
-    if (!value || value === "") {
-      setTotalPrice("");
-      setUnitPrice("");
+    // If empty or negative, set quantity as 0
+    if (!value || value === "" || Number(value) < 0) {
+      setQuantity(0);
+      setTotalPrice(unitPrice ? unitPrice * 0 : 0);
       return;
     }
 
-    if (unitPrice && value) {
+    setQuantity(value);
+
+    if (unitPrice) {
       setTotalPrice(value * unitPrice);
-    } else if (totalPrice && value) {
+    } else if (totalPrice) {
       setUnitPrice(totalPrice / value);
     }
   };
+
 
   // Submit form with validation
   const handleSubmit = async (e) => {
@@ -149,8 +154,8 @@ export default function AddStock({
       purchaseDate,
       warranty:
         warranty === null ||
-        warranty === undefined ||
-        (typeof warranty === "string" && warranty.trim() === "")
+          warranty === undefined ||
+          (typeof warranty === "string" && warranty.trim() === "")
           ? "00"
           : warranty,
     };
@@ -273,9 +278,9 @@ export default function AddStock({
             fullWidth
             type="number"
             label="Quantity"
-            value={quantity}
+            value={quantity === "" ? 0 : quantity}
             onChange={handleQuantityChange}
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             error={!!errors.quantity}
             helperText={errors.quantity}
           />
@@ -287,9 +292,9 @@ export default function AddStock({
             fullWidth
             type="number"
             label="Unit Price"
-            value={unitPrice}
+            value={unitPrice === "" ? 0 : unitPrice}
             onChange={handleUnitPriceChange}
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             error={!!errors.unitPrice}
             helperText={errors.unitPrice}
           />
@@ -297,18 +302,18 @@ export default function AddStock({
             fullWidth
             type="number"
             label="Sale Price"
-            value={salePrice}
-            onChange={(e) => setSalePrice(e.target.value)}
-            inputProps={{ min: 1 }}
+            value={salePrice === "" ? 0 : salePrice}
+            onChange={(e) => setSalePrice(e.target.value || 0)}
+            inputProps={{ min: 0 }}
             error={!!errors.salePrice}
             helperText={errors.salePrice}
           />
           <TextField
             fullWidth
             label="Total Price"
-            value={totalPrice}
+            value={totalPrice === "" ? 0 : totalPrice}
             onChange={handleTotalPriceChange}
-            inputProps={{ min: 1 }}
+            inputProps={{ min: 0 }}
             error={!!errors.totalPrice}
             helperText={errors.totalPrice}
           />

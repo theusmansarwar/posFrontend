@@ -23,9 +23,8 @@ import LowStock from "../LowStock";
 const POSBillingSystem = () => {
   const [searchId, setSearchId] = useState("");
   const [cartItems, setCartItems] = useState([]);
-  const [discountType, setDiscountType] = useState("amount");
-  const [discountValue, setDiscountValue] = useState(0);
   const [laborCost, setLaborCost] = useState(0);
+  const [tunningCost, setTunningCost] = useState(0);
   const [customerPay, setCustomerPay] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -133,17 +132,13 @@ const POSBillingSystem = () => {
     );
   };
 
-  const calculateDiscount = () => {
-    const subtotal = calculateSubtotal();
-    if (discountType === "percentage") return (subtotal * discountValue) / 100;
-    return discountValue;
-  };
+
 
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
-    const discount = calculateDiscount();
     const labor = parseFloat(laborCost) || 0;
-    return subtotal - discount + labor;
+    const tunning = parseFloat(tunningCost) || 0;
+    return subtotal + tunning + labor;
   };
 
   const calculateChange = () => {
@@ -185,8 +180,8 @@ const POSBillingSystem = () => {
         salePrice: parseFloat(item.salePrice),
         total: parseFloat((item.salePrice * item.quantity).toFixed(2)),
       })),
-      discount: parseFloat(calculateDiscount().toFixed(2)),
       labourCost: parseFloat(laborCost) || 0,
+      tunningCost: parseFloat(tunningCost) || 0,
       paymentMode: paymentMode,
       totalAmount: parseFloat(calculateTotal().toFixed(2)),
       userPaidAmount: parseFloat(customerPay) || 0,
@@ -208,9 +203,7 @@ const POSBillingSystem = () => {
           : new Date().toLocaleString(),
         items: cartItems,
         subtotal: calculateSubtotal(),
-        discountType,
-        discountValue,
-        discount: calculateDiscount(),
+        tunningCost: parseFloat(tunningCost) || 0,
         laborCost: parseFloat(laborCost) || 0,
         total: calculateTotal(),
         customerPaid: parseFloat(customerPay) || 0,
@@ -231,7 +224,7 @@ const POSBillingSystem = () => {
       }
 
       setCartItems([]);
-      setDiscountValue(0);
+      setTunningCost(0);
       setLaborCost(0);
       setCustomerPay("");
       setCustomerName("");
@@ -464,20 +457,30 @@ const POSBillingSystem = () => {
           </table>
 
           <div class="receipt-summary">
-            <div class="summary-line">
-              <span>Subtotal:</span>
-              <span>Rs. ${billData.subtotal.toFixed(2)}</span>
-            </div>
-            ${billData.laborCost > 0 ? `
-              <div class="summary-line labor-highlight">
-                <span>Labor Cost:</span>
-                <span>+Rs. ${billData.laborCost.toFixed(2)}</span>
-              </div>
-            ` : ''}
-            <div class="summary-line total">
-              <span>Total:</span>
-              <span>Rs. ${billData.total.toFixed(2)}</span>
-            </div>
+           <div class="summary-line">
+  <span>Subtotal:</span>
+  <span>Rs. ${billData.subtotal.toFixed(2)}</span>
+</div>
+
+${billData.tunningCost > 0 ? `
+  <div class="summary-line labor-highlight">
+    <span>Tunning Cost:</span>
+    <span>+Rs. ${billData.tunningCost.toFixed(2)}</span>
+  </div>
+` : ''}
+
+${billData.laborCost > 0 ? `
+  <div class="summary-line labor-highlight">
+    <span>Labor Cost:</span>
+    <span>+Rs. ${billData.laborCost.toFixed(2)}</span>
+  </div>
+` : ''}
+
+<div class="summary-line total">
+  <span>Total:</span>
+  <span>Rs. ${billData.total.toFixed(2)}</span>
+</div>
+
             <div class="summary-line">
               <span>Paid:</span>
               <span>Rs. ${billData.customerPaid.toFixed(2)}</span>
@@ -721,54 +724,31 @@ const POSBillingSystem = () => {
             <span>Rs. {calculateSubtotal().toFixed(2)}</span>
           </div>
 
-          <div className="discount-section">
-            <div className="discount-type-selector">
-              <label>
-                <input
-                  type="radio"
-                  value="amount"
-                  checked={discountType === "amount"}
-                  onChange={(e) => setDiscountType(e.target.value)}
-                />
-                Amount (Rs.)
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="percentage"
-                  checked={discountType === "percentage"}
-                  onChange={(e) => setDiscountType(e.target.value)}
-                />
-                Percentage (%)
-              </label>
-            </div>
+
+
+
+          <div className="tunning-section">
             <div className="summary-row">
-              <span>
-                Discount {discountType === "percentage" ? "(%)" : "(Rs.)"}:
-              </span>
+              <span>Tunning Cost (Rs.):</span>
               <input
                 type="number"
-                value={discountValue}
-                onChange={(e) =>
-                  setDiscountValue(parseFloat(e.target.value) || 0)
-                }
+                value={tunningCost}
+                onChange={(e) => setTunningCost(parseFloat(e.target.value) || 0)}
                 className="discount-input"
                 placeholder="0.00"
                 min="0"
-                max={discountType === "percentage" ? "100" : undefined}
               />
             </div>
           </div>
 
-          {calculateDiscount() > 0 && (
-            <div className="summary-row savings-row">
-              <span>You Saved:</span>
-              <span className="savings-amount">
-                -Rs. {calculateDiscount().toFixed(2)}
+          {tunningCost > 0 && (
+            <div className="summary-row labor-row">
+              <span>Tunning Added:</span>
+              <span className="labor-amount">
+                +Rs. {parseFloat(tunningCost).toFixed(2)}
               </span>
             </div>
           )}
-
           <div className="labor-section">
             <div className="summary-row">
               <span>Labor Cost (Rs.):</span>
@@ -965,22 +945,26 @@ const POSBillingSystem = () => {
               <table className="receipt-table">
                 <thead>
                   <tr>
+                    <th>ID</th>
                     <th>Item</th>
                     <th>Qty</th>
                     <th>Price</th>
                     <th>Total</th>
                   </tr>
                 </thead>
+
                 <tbody>
-                  {billData.items.map((item) => (
-                    <tr key={item.id}>
+                  {billData.items.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.productId}</td>
                       <td>{item.productName}</td>
                       <td>{item.quantity}</td>
-                      <td>Rs. {item.salePrice?.toFixed(2)}</td>
+                      <td>Rs. {item.salePrice.toFixed(2)}</td>
                       <td>Rs. {(item.salePrice * item.quantity).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
+
               </table>
 
               <div className="receipt-summary">
@@ -988,7 +972,7 @@ const POSBillingSystem = () => {
                   <span>Subtotal:</span>
                   <span>Rs. {billData.subtotal.toFixed(2)}</span>
                 </div>
-                {billData.discount > 0 && (
+                {/* {billData.discount > 0 && (
                   <>
                     <div className="summary-line">
                       <span>
@@ -1005,6 +989,12 @@ const POSBillingSystem = () => {
                       <span>Rs. {billData.discount.toFixed(2)}</span>
                     </div>
                   </>
+                )} */}
+                {billData.tunningCost > 0 && (
+                  <div className="summary-line labor-highlight">
+                    <span>Tunning Cost:</span>
+                    <span>+Rs. {billData.tunningCost.toFixed(2)}</span>
+                  </div>
                 )}
                 {billData.laborCost > 0 && (
                   <div className="summary-line labor-highlight">
